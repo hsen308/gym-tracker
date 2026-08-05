@@ -1,0 +1,46 @@
+/* Design tokens — build-plan.md §6b.
+   The whole app is one dark theme, on purpose. No light-mode toggle. */
+:root {
+  /* Surface — deep slate, not pure black; less smear under gym lighting */
+  --bg:          #14181F;
+  --surface:     #1C222C;
+  --surface-alt: #242C38;
+  --line:        #313B4A;
+
+  /* Text */
+  --text:        #E9EDF3;
+  --text-muted:  #8B97A8;
+  --text-faint:  #5C6879;
+
+  /* Signal — amber reads as load/effort; used ONLY for the active set
+     and the primary action. Never decorative. */
+  --signal:      #FF7A2F;
+  --signal-dim:  #C25A1E;
+
+  /* States */
+  --pr:          #47D39B;   /* personal record */
+  --warn:        #E4B33C;   /* SI joint caution */
+  --danger:      #E05252;
+
+  --radius:      10px;
+  --tap:         56px;      /* minimum tap target height */
+
+  /* Type scale — build-plan §6c: 11/13/15/18/24/40/64 */
+  --fs-2xs: 11px;
+  --fs-xs:  13px;
+  --fs-sm:  15px;
+  --fs-md:  18px;
+  --fs-lg:  24px;
+  --fs-xl:  40px;
+  --fs-2xl: 64px;
+
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+
+  /* apple-design §4: critically-damped default for anything that isn't
+     gesture-driven (no overshoot — reserved for momentum-driven drags). */
+  --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 120ms;
+  --dur-med:  220ms;
+}

@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  -webkit-tap-highlight-color: transparent; /* we draw our own press feedback */
+  overscroll-behavior-y: none; /* no rubber-band page bounce fighting our own sheets */
+}
+
+/* apple-design §15: tracking is size-specific, never one value for all sizes.
+   Large numerals get negative tracking; body text stays near zero. */
+.numeral {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums; /* digits don't jitter/reflow as they change */
+}
+.numeral-display {
+  font-size: var(--fs-2xl);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.numeral-lg { font-size: var(--fs-xl); letter-spacing: -0.015em; line-height: 1.05; }
+
+.mono {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* apple-design §1: feedback lives on press, is instant, and never waits
+   for release. Every tappable control in this app should compose this in. */
+.pressable {
+  min-height: var(--tap);
+  transition: transform var(--dur-fast) var(--ease-standard), opacity var(--dur-fast) var(--ease-standard);
+}
+.pressable:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+/* Visible keyboard focus — build-plan §6e explicitly forbids removing outlines. */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
