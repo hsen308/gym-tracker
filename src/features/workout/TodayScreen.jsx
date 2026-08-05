@@ -5,7 +5,7 @@
 // immediately") actually true in practice.
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
-import { db, newId } from '../../db/dexie'
+import { db, newId, upsertRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
 import { todayLocalDate } from '../../lib/format'
 import Button from '../../components/Button'
@@ -16,9 +16,9 @@ export default function TodayScreen() {
   const navigate = useNavigate()
 
   const days = useLiveQuery(() => db.program_days.orderBy('order_index').toArray(), [])
-  const unfinished = useLiveQuery(() => db.workouts.filter((w) => !w.finished_at).first(), [])
+  const unfinished = useLiveQuery(() => db.workouts.filter((w) => !w.finished_at && !w.deleted_at).first(), [])
   const lastFinished = useLiveQuery(async () => {
-    const all = await db.workouts.filter((w) => !!w.finished_at).toArray()
+    const all = await db.workouts.filter((w) => !!w.finished_at && !w.deleted_at).toArray()
     all.sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
     return all[0]
   }, [])
@@ -45,7 +45,7 @@ export default function TodayScreen() {
       updated_at: now,
       deleted_at: null,
     }
-    await db.workouts.add(workout)
+    await upsertRow('workouts', workout)
     navigate(`/workout/${workout.id}`)
   }
 

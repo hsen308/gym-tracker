@@ -1,6 +1,7 @@
 import { BrowserRouter } from 'react-router-dom'
 import { MotionConfig } from 'motion/react'
 import { AuthProvider } from './app/AuthProvider'
+import { SyncProvider } from './app/SyncProvider'
 import AppRouter from './app/router'
 
 export default function App() {
@@ -12,7 +13,11 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       <BrowserRouter>
         <AuthProvider>
-          <AppRouter />
+          {/* Needs useAuth (to know when to start/stop syncing), so it nests
+              inside AuthProvider rather than sitting beside it. */}
+          <SyncProvider>
+            <AppRouter />
+          </SyncProvider>
         </AuthProvider>
       </BrowserRouter>
     </MotionConfig>

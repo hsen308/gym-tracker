@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, newId } from '../../db/dexie'
+import { db, newId, upsertRow, updateRow, softDeleteRow } from '../../db/dexie'
 import { useElapsedSeconds } from '../../lib/useElapsed'
 import { formatDuration } from '../../lib/format'
 import { REST_SECONDS } from '../../lib/constants'
@@ -33,7 +33,10 @@ export default function ActiveWorkout() {
     () => (exerciseIds.length ? db.exercises.where('id').anyOf(exerciseIds).toArray() : []),
     [exerciseIds.join(',')],
   )
-  const sets = useLiveQuery(() => db.sets.where('workout_id').equals(workoutId).sortBy('set_number'), [workoutId])
+  const sets = useLiveQuery(
+    () => db.sets.where('workout_id').equals(workoutId).filter((s) => !s.deleted_at).sortBy('set_number'),
+    [workoutId],
+  )
   const activeRest = useLiveQuery(() => db.active_rest.get(workoutId), [workoutId])
 
   const [expandedId, setExpandedId] = useState(null)
@@ -55,7 +58,7 @@ export default function ActiveWorkout() {
 
   const confirmSet = async (programExercise, exercise, draft) => {
     const now = new Date().toISOString()
-    await db.sets.add({
+    await upsertRow('sets', {
       id: newId(),
       user_id: workout.user_id,
       workout_id: workoutId,
@@ -68,8 +71,11 @@ export default function ActiveWorkout() {
       is_warmup: false,
       duration_seconds: null,
       completed_at: now,
+      updated_at: now,
+      deleted_at: null,
     })
     // Confirming a set starts the rest timer for that exercise (§7 item 5).
+    // Local-only — active_rest has no Supabase counterpart (§3b comment).
     await db.active_rest.put({
       workout_id: workoutId,
       exercise_id: exercise.id,
@@ -78,11 +84,14 @@ export default function ActiveWorkout() {
     })
   }
 
-  const removeSet = (setId) => db.sets.delete(setId)
+  // Soft delete (build-plan §3a) — the row stays in Dexie with deleted_at
+  // set, so the deletion itself has something to push to Supabase. A hard
+  // local delete here would erase the row before sync ever saw it.
+  const removeSet = (setId) => softDeleteRow('sets', setId)
   const clearRest = () => db.active_rest.delete(workoutId)
 
   const finishWorkout = async (extra) => {
-    await db.workouts.update(workoutId, {
+    await updateRow('workouts', workoutId, {
       ...extra,
       finished_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

@@ -12,3 +12,6 @@ export const WEIGHT_STEP_KG = 2.5
 export const WEIGHT_STEP_KG_LONG_PRESS = 5
 
 export const MIN_SESSIONS_FOR_CORRELATION = 12 // §7 Phase 6 — don't show SI correlation before this
+
+// §7 Phase 5 — daily macro target, given explicitly in the plan.
+export const MACRO_TARGET = { calories: 2200, protein_g: 170, carbs_g: 220, fat_g: 70 }

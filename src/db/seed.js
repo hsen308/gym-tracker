@@ -121,6 +121,16 @@ export const PROGRAM_DAYS = [
 //   rest_seconds: 180, is_strength_lift: true }
 export const PROGRAM_EXERCISES = []
 
+// Phase 5 (build-plan §7): "Seed the ~17 meals already defined in the
+// user's program with their macros." That list isn't in this repo either
+// — same gap as PROGRAM_EXERCISES. Two placeholders so MealsScreen has
+// something to render; replace with the real ~17 once available. Shape:
+// { name, calories, protein_g, carbs_g, fat_g }
+export const MEAL_PRESETS = [
+  { name: 'Placeholder — Chicken, rice, veg', calories: 650, protein_g: 55, carbs_g: 70, fat_g: 15 },
+  { name: 'Placeholder — Protein shake + oats', calories: 450, protein_g: 40, carbs_g: 50, fat_g: 10 },
+]
+
 export async function seedIfEmpty(userId) {
   const existing = await db.program_days.count()
   if (existing > 0) return
@@ -131,6 +141,8 @@ export async function seedIfEmpty(userId) {
 
   const dayRows = PROGRAM_DAYS.map((d) => ({ id: newId(), user_id: userId, created_at: now, updated_at: now, deleted_at: null, ...d }))
   const dayIdByCode = Object.fromEntries(dayRows.map((d) => [d.code, d.id]))
+
+  const mealRows = MEAL_PRESETS.map((m) => ({ id: newId(), user_id: userId, is_custom: false, created_at: now, updated_at: now, deleted_at: null, ...m }))
 
   const programExerciseRows = PROGRAM_EXERCISES.map((pe) => ({
     id: newId(),
@@ -148,10 +160,24 @@ export async function seedIfEmpty(userId) {
     notes: pe.notes ?? null,
   }))
 
-  await db.transaction('rw', db.exercises, db.program_days, db.program_exercises, async () => {
+  // Seeded rows sync to Supabase too — queue outbox entries for all of
+  // them in the same transaction as the writes, exactly like any other
+  // write (build-plan §5's push path doesn't distinguish "seed" from
+  // "user action", so seeding shouldn't either).
+  const now2 = new Date().toISOString()
+  const outboxFor = (table, rows) => rows.map((r) => ({ table_name: table, op: 'upsert', row_id: r.id, created_at: now2, attempts: 0 }))
+
+  await db.transaction('rw', db.exercises, db.program_days, db.program_exercises, db.meal_presets, db.outbox, async () => {
     await db.exercises.bulkAdd(exerciseRows)
     await db.program_days.bulkAdd(dayRows)
     if (programExerciseRows.length) await db.program_exercises.bulkAdd(programExerciseRows)
+    await db.meal_presets.bulkAdd(mealRows)
+    await db.outbox.bulkAdd([
+      ...outboxFor('exercises', exerciseRows),
+      ...outboxFor('program_days', dayRows),
+      ...outboxFor('program_exercises', programExerciseRows),
+      ...outboxFor('meal_presets', mealRows),
+    ])
   })
 
   if (!programExerciseRows.length) {

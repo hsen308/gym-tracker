@@ -24,6 +24,18 @@ export const slope = (points) => {
   return den === 0 ? 0 : num / den
 }
 
+// kg/week over the trailing `days` days (21 by default) — build-plan §7
+// Phase 4 ("Trend readout") and Phase 6 (calorie auto-adjust reads this too).
+// Shared here instead of duplicated in BodyScreen and InsightsScreen.
+export const weightTrend = (logs, days = 21) => {
+  const since = Date.now() - days * 86_400_000
+  const recent = logs.filter((l) => new Date(l.date).getTime() >= since)
+  if (recent.length < 3) return null
+  const t0 = new Date(recent[0].date).getTime()
+  const points = recent.map((l) => ({ x: (new Date(l.date).getTime() - t0) / 86_400_000, y: l.weight_kg }))
+  return slope(points) * 7
+}
+
 export const movingAverage = (series, window = 7) =>
   series.map((_, i) => {
     const slice = series.slice(Math.max(0, i - window + 1), i + 1)

@@ -1,16 +1,13 @@
-// useState: a piece of data that, when changed via its setter, tells React
-// "re-render whatever reads this." Plain variables don't do that — reassign
-// a normal `let` and the screen never updates, because nothing told React
-// to look again.
-//
-// useEffect: "after this component is on screen, run this code — and if it
-// returns a function, run that function when the component leaves the
-// screen (cleanup)." Here it's used to subscribe to browser online/offline
-// events and unsubscribe when no longer needed, so listeners don't pile up.
+// Single sync-status readout (build-plan §5): "Synced" · "Offline · N
+// pending" · "Syncing". Nothing more — no progress bars, no per-table
+// detail. useSync gives the live outbox count via a Dexie live query, so
+// this updates the instant a set is confirmed, before any network call.
 import { useEffect, useState } from 'react'
+import { useSync } from '../app/SyncProvider'
 
 export default function OfflineBadge() {
   const [online, setOnline] = useState(navigator.onLine)
+  const sync = useSync()
 
   useEffect(() => {
     const goOnline = () => setOnline(true)
@@ -23,10 +20,20 @@ export default function OfflineBadge() {
     }
   }, [])
 
+  const pending = sync?.pending ?? 0
+  const label = sync?.syncing
+    ? 'Syncing'
+    : !online
+      ? `Offline${pending ? ` · ${pending} pending` : ''}`
+      : pending
+        ? `${pending} pending`
+        : 'Synced'
+  const state = sync?.syncing ? 'is-syncing' : online && !pending ? 'is-online' : 'is-offline'
+
   return (
-    <span className={`offline-badge ${online ? 'is-online' : 'is-offline'}`}>
+    <span className={`offline-badge ${state}`}>
       <span className="offline-badge-dot" />
-      {online ? 'Synced' : 'Offline'}
+      {label}
     </span>
   )
 }

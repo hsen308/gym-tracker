@@ -34,7 +34,7 @@ export default function ExercisePanel({
   // same-session "PR of a PR" won't get a second flash. Never crosses
   // exercise substitutions, since it's filtered by this exact exercise_id.
   const historicalSets = useLiveQuery(
-    () => db.sets.where('exercise_id').equals(exercise.id).filter((s) => s.workout_id !== workoutId && !s.is_warmup).toArray(),
+    () => db.sets.where('exercise_id').equals(exercise.id).filter((s) => s.workout_id !== workoutId && !s.is_warmup && !s.deleted_at).toArray(),
     [exercise.id, workoutId],
   )
 
