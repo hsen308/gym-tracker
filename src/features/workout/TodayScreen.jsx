@@ -50,40 +50,37 @@ export default function TodayScreen() {
   }
 
   return (
-    <div style={{ padding: 20, paddingBottom: 100, maxWidth: 480, margin: '0 auto' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+    <div className="container today-screen">
+      <header className="row today-header">
         <span className="stepper-label">Today</span>
         <OfflineBadge />
       </header>
 
       {unfinished ? (
-        <>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 12 }}>You have a session in progress.</p>
+        <div className="stack-3" style={{ marginBottom: 'var(--space-7)' }}>
+          <p className="muted">You have a session in progress.</p>
           <Button className="btn-block" onClick={() => navigate(`/workout/${unfinished.id}`)}>
             Resume {days.find((d) => d.id === unfinished.program_day_id)?.name ?? 'workout'}
           </Button>
-        </>
+        </div>
       ) : nextDay ? (
-        <Button className="btn-block" onClick={() => startDay(nextDay)}>
-          Start {nextDay.name}
-        </Button>
+        <div style={{ marginBottom: 'var(--space-7)' }}>
+          <Button className="btn-block" onClick={() => startDay(nextDay)}>
+            Start {nextDay.name}
+          </Button>
+        </div>
       ) : (
-        <p style={{ color: 'var(--text-muted)' }}>No sessions yet. Start today's workout.</p>
+        <p className="muted" style={{ marginBottom: 'var(--space-7)' }}>No sessions yet. Start today's workout.</p>
       )}
 
       {days.length > 0 && (
         <>
-          <h2 style={{ fontSize: 15, color: 'var(--text-muted)', margin: '32px 0 12px', fontWeight: 500 }}>Or pick a day</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h2 className="section-label">Or pick a day</h2>
+          <div className="stack-2">
             {days.map((day) => (
-              <button
-                key={day.id}
-                className="btn btn-secondary pressable btn-block"
-                style={{ justifyContent: 'space-between' }}
-                onClick={() => startDay(day)}
-              >
+              <button key={day.id} className="btn btn-secondary pressable btn-block day-pick" onClick={() => startDay(day)}>
                 <span>{day.name}</span>
-                <span style={{ color: 'var(--text-faint)' }}>{day.focus}</span>
+                <span className="faint">{day.focus}</span>
               </button>
             ))}
           </div>

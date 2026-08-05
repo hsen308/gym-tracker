@@ -12,21 +12,14 @@ export default function FinishSheet({ open, onClose, onFinish }) {
     <Sheet open={open} onClose={onClose}>
       <h2 style={{ fontSize: 18, marginBottom: 20 }}>Finish workout</h2>
 
-      <div style={{ marginBottom: 20 }}>
+      <div className="stack-3" style={{ marginBottom: 20 }}>
         <Stepper label="SI joint pain (0–10)" value={siPain} onChange={setSiPain} step={1} min={0} max={10} />
-      </div>
-      <div style={{ marginBottom: 20 }}>
         <Stepper label="Energy (1–5)" value={energy} onChange={setEnergy} step={1} min={1} max={5} />
       </div>
 
       <div className="field">
         <label>Notes (optional)</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          style={{ background: 'var(--surface-alt)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', color: 'var(--text)', padding: 10, fontFamily: 'inherit', fontSize: 15, resize: 'none' }}
-        />
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
       </div>
 
       <Button className="btn-block" onClick={() => onFinish({ si_pain_score: siPain, energy, notes: notes || null })}>

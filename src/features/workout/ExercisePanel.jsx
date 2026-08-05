@@ -53,7 +53,7 @@ export default function ExercisePanel({
         {exercise.name}
         {exercise.si_risk === 'caution' && <span className="warn-dot" aria-hidden />}
       </span>
-      <span className="mono" style={{ color: 'var(--text-muted)' }}>{confirmedSets.length}/{targetSets}</span>
+      <span className="mono muted">{confirmedSets.length}/{targetSets}</span>
     </button>
   )
 

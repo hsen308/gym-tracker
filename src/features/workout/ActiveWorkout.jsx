@@ -94,18 +94,18 @@ export default function ActiveWorkout() {
   const cueExercise = cueExerciseId ? exerciseById[cueExerciseId] : null
 
   return (
-    <div style={{ paddingBottom: activeRest ? 140 : 90, maxWidth: 480, margin: '0 auto' }}>
+    <div className={`workout-shell ${activeRest ? 'has-rest-timer' : ''}`}>
       <header className="workout-header">
         <div>
           <div style={{ fontWeight: 700 }}>{day?.name ?? '…'}</div>
-          <div className="mono" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{formatDuration(elapsed)}</div>
+          <div className="mono muted" style={{ fontSize: 13 }}>{formatDuration(elapsed)}</div>
         </div>
         <OfflineBadge />
       </header>
 
-      <div style={{ padding: '0 16px' }}>
+      <div className="workout-body">
         {programExercises.length === 0 && (
-          <p style={{ color: 'var(--text-muted)', marginTop: 40 }}>
+          <p className="muted" style={{ marginTop: 40 }}>
             This day has no exercises yet — the program hasn't been filled into <code>src/db/seed.js</code> yet.
           </p>
         )}
@@ -129,11 +129,7 @@ export default function ActiveWorkout() {
         })}
       </div>
 
-      <button
-        className="btn btn-secondary pressable"
-        style={{ margin: '24px 16px', width: 'calc(100% - 32px)' }}
-        onClick={() => setFinishOpen(true)}
-      >
+      <button className="btn btn-secondary pressable btn-block finish-btn" onClick={() => setFinishOpen(true)}>
         Finish workout
       </button>
 
@@ -155,9 +151,9 @@ export default function ActiveWorkout() {
                 ⚠ SI joint caution — watch load and form on this one.
               </p>
             )}
-            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{cueExercise.setup_notes || 'No setup notes yet.'}</p>
+            <p className="muted" style={{ fontSize: 14 }}>{cueExercise.setup_notes || 'No setup notes yet.'}</p>
             {cueExercise.cues?.length > 0 && (
-              <ul style={{ marginTop: 12, paddingLeft: 18, color: 'var(--text-muted)', fontSize: 14 }}>
+              <ul className="muted cue-list">
                 {cueExercise.cues.map((c, i) => <li key={i}>{c}</li>)}
               </ul>
             )}

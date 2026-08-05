@@ -67,3 +67,52 @@ button {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* apple-design §14: reduced transparency ≠ reduced motion. Handled
+   separately — translucent chrome goes solid, blur drops, independent of
+   whether the user also wants less motion. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass { background: var(--surface) !important; backdrop-filter: none !important; }
+}
+@media (prefers-contrast: more) {
+  .glass, .card { border-color: var(--text-muted) !important; }
+}
+
+/* Layout utilities — every screen traces its spacing to these instead of
+   one-off inline styles, so rhythm stays consistent app-wide. */
+.container { max-width: 480px; margin: 0 auto; padding: 0 var(--space-5); }
+.stack-2 { display: flex; flex-direction: column; gap: var(--space-2); }
+.stack-3 { display: flex; flex-direction: column; gap: var(--space-3); }
+.row { display: flex; align-items: center; justify-content: space-between; }
+.muted { color: var(--text-muted); }
+.faint { color: var(--text-faint); }
+
+/* apple-design §12: a raised surface gets a border + shadow so it reads as
+   sitting above the background, not just a rectangle drawn on it. */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Translucent chrome — sticky headers, sheets. Content scrolls underneath;
+   the bright top border stands in for light catching a physical material. */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border-top: 1px solid var(--glass-top);
+}
+
+textarea, select {
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  resize: none;
+}
+textarea:focus-visible, select:focus-visible { outline: 2px solid var(--signal); outline-offset: -1px; }

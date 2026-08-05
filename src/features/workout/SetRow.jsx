@@ -29,8 +29,8 @@ export default function SetRow({ setNumber, draft, onDraftChange, onConfirm, con
       >
         <span className="mono">#{setNumber}</span>
         <span className="mono">{formatWeight(confirmedSet.weight_kg)} × {confirmedSet.reps}</span>
-        <span className="mono" style={{ color: 'var(--text-muted)' }}>RIR {confirmedSet.rir}</span>
-        {isPR && <span style={{ color: 'var(--pr)', fontWeight: 700, fontSize: 13 }}>PR</span>}
+        <span className="mono muted">RIR {confirmedSet.rir}</span>
+        {isPR && <span className="pr-badge">PR</span>}
       </div>
     )
   }
