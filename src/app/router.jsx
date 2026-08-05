@@ -35,10 +35,21 @@ function RequireAuth({ children }) {
   return children
 }
 
+// The inverse of RequireAuth. Without this, a successful sign-in updates
+// `user` internally but nothing ever leaves the /login route to show it —
+// the form just sits there with no error and no visible change, which
+// looks exactly like a failed login even though auth succeeded.
+function RedirectIfAuthed({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (user) return <Navigate to="/" replace />
+  return children
+}
+
 export default function AppRouter() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginScreen />} />
+      <Route path="/login" element={<RedirectIfAuthed><LoginScreen /></RedirectIfAuthed>} />
       <Route path="/" element={<RequireAuth><WithTabBar><TodayScreen /></WithTabBar></RequireAuth>} />
       <Route path="/workout/:workoutId" element={<RequireAuth><ActiveWorkout /></RequireAuth>} />
       <Route path="/settings" element={<RequireAuth><WithTabBar><SettingsScreen /></WithTabBar></RequireAuth>} />

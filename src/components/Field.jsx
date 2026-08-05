@@ -1,8 +1,8 @@
 export default function Field({ label, ...inputProps }) {
   return (
-    <div className="field">
-      <label>{label}</label>
+    <label className="field">
+      <span className="label">{label}</span>
       <input {...inputProps} />
-    </div>
+    </label>
   )
 }

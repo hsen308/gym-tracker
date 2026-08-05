@@ -1,312 +1,352 @@
-/* Shared component styles. Plain CSS, no framework — build-plan §1. */
+/* Component styles. Plain CSS, no framework — build-plan §1. */
 
+/* ---- Buttons -------------------------------------------------------------
+   Primary is an INVERTED plane (white on black). In a monochrome system
+   inversion is what a colour accent would otherwise do — which is exactly
+   why it's rationed to one primary action per screen. */
 .btn {
   border-radius: var(--radius);
-  padding: 0 20px;
+  padding: 0 var(--space-5);
+  min-height: var(--tap);
   font-weight: 600;
   font-size: var(--fs-sm);
+  letter-spacing: 0.01em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
 }
-/* Primary is the one place boldness is spent (build-plan §6a) — a soft glow
-   instead of a flat fill gives it presence without turning it decorative. */
-.btn-primary  { background: var(--signal); color: #14181F; box-shadow: var(--shadow-signal); }
-.btn-secondary{ background: var(--surface-alt); color: var(--text); border: 1px solid var(--line); }
-.btn-ghost    { background: transparent; color: var(--text-muted); }
-.btn-danger   { background: var(--danger); color: #fff; }
-.btn:disabled { opacity: 0.4; box-shadow: none; }
-.btn-block    { width: 100%; }
+.btn-primary   { background: var(--signal); color: var(--on-signal); }
+.btn-secondary { background: var(--surface-alt); color: var(--text); border: 1px solid var(--line); }
+.btn-secondary:active { background: var(--surface-high); }
+.btn-ghost     { background: transparent; color: var(--text-muted); padding: 0 var(--space-3); }
+/* Destructive is an outline, never a fill — it should not out-shout the
+   primary action, and there's no red to lean on. */
+.btn-danger    { background: transparent; color: var(--text); border: 1px solid var(--danger-line); }
+.btn:disabled  { opacity: 0.35; }
+.btn-block     { width: 100%; }
+.btn-icon      { min-width: var(--tap); padding: 0; }
 
-/* Stepper — the primary input on the logging path. No keyboard, ever. */
+/* ---- Stepper -------------------------------------------------------------
+   The primary input on the logging path. No keyboard, ever (build-plan §9). */
+.stepper-wrap { flex: 1; min-width: 0; }
 .stepper {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   background: var(--surface-alt);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   height: var(--tap);
+  overflow: hidden;
 }
 .stepper-btn {
-  width: var(--tap);
-  height: var(--tap);
-  font-size: var(--fs-lg);
-  font-weight: 700;
+  width: 46px;
+  flex: none;
+  display: grid;
+  place-items: center;
   color: var(--text-muted);
 }
-.stepper-btn:active { color: var(--signal); }
+.stepper-btn:active { background: var(--surface-high); color: var(--text); }
 .stepper-value {
   flex: 1;
-  text-align: center;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--fs-md);
-}
-.stepper-label {
-  font-size: var(--fs-2xs);
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-  display: block;
+  font-weight: 500;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
 }
 
-/* Bottom sheet — dismiss by swipe, never a precise close tap (§6e). */
-.sheet-scrim {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 12, 16, 0.6);
-  z-index: 40;
-}
+/* ---- Sheet ---------------------------------------------------------------
+   Dismiss by swipe, never a precise close tap (§6e). Translucency is the one
+   place the app uses a material — content genuinely passes underneath it. */
+.sheet-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.66); z-index: 40; }
 .sheet {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 0; right: 0; bottom: 0;
   z-index: 41;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border-top: 1px solid var(--glass-top);
+  background: rgba(11, 11, 12, 0.86);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border-top: 1px solid var(--line-strong);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow: var(--shadow-lg); /* bigger surface = thicker shadow, apple-design §12 */
-  padding: 10px var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
-  max-height: 85vh;
+  box-shadow: var(--shadow-sheet);
+  padding: var(--space-2) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+  max-height: 86vh;
   overflow-y: auto;
-  touch-action: none; /* let the drag gesture own vertical touch, not the page scroll */
+  touch-action: none; /* the drag gesture owns vertical touch, not page scroll */
 }
 .sheet-handle {
-  width: 36px;
-  height: 4px;
-  border-radius: 4px;
-  background: var(--line);
-  margin: 4px auto 16px;
+  width: 32px; height: 3px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  margin: var(--space-2) auto var(--space-5);
 }
+.sheet-title { font-size: var(--fs-md); margin-bottom: var(--space-4); }
 
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-.field label { font-size: var(--fs-xs); color: var(--text-muted); }
-.field input {
-  height: var(--tap);
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  color: var(--text);
-  padding: 0 14px;
-  font-size: var(--fs-sm);
-  font-family: inherit;
-}
-.field input:focus-visible { outline: 2px solid var(--signal); outline-offset: -1px; }
+/* ---- Field ---------------------------------------------------------------- */
+.field { display: flex; flex-direction: column; gap: var(--space-2); }
+.field input { height: var(--tap); padding: 0 var(--space-4); }
 
+/* ---- Toast ---------------------------------------------------------------- */
 .toast {
   position: fixed;
-  bottom: calc(24px + env(safe-area-inset-bottom));
-  left: 20px;
-  right: 20px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  left: var(--space-5); right: var(--space-5);
   z-index: 50;
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
+  max-width: 440px;
+  margin: 0 auto;
+  background: var(--signal);
+  color: var(--on-signal);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: var(--space-4);
   font-size: var(--fs-xs);
-  color: var(--text);
-}
-
-.offline-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-2xs);
-  color: var(--text-muted);
-}
-.offline-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); }
-.offline-badge.is-online .offline-badge-dot { background: var(--pr); }
-.offline-badge.is-offline .offline-badge-dot { background: var(--warn); }
-.offline-badge.is-syncing .offline-badge-dot { background: var(--signal); }
-
-.login-shell {
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-5);
-}
-.login-card {
-  width: 100%;
-  max-width: 360px;
-  padding: var(--space-7) var(--space-6);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-5);
-}
-.login-heading { display: flex; flex-direction: column; gap: 2px; }
-
-.today-screen { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); padding-bottom: var(--space-8); }
-.today-header { margin-bottom: var(--space-7); }
-.section-label {
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
   font-weight: 500;
-  margin: 0 0 var(--space-3);
-}
-.day-pick { justify-content: space-between; }
-
-.workout-shell { max-width: 480px; margin: 0 auto; padding-bottom: 90px; }
-.workout-shell.has-rest-timer { padding-bottom: 140px; }
-.workout-body { padding: 0 var(--space-4); }
-.finish-btn { margin: var(--space-6) var(--space-4); width: calc(100% - var(--space-4) * 2); }
-.cue-list { margin-top: var(--space-3); padding-left: 18px; font-size: 14px; }
-.cue-list li + li { margin-top: 4px; }
-.pr-badge { color: var(--pr); font-weight: 700; font-size: 13px; }
-
-.settings-screen { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); padding-bottom: var(--space-8); }
-.settings-section { padding: var(--space-5); margin-bottom: var(--space-4); }
-.sync-error-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--line);
 }
 
-.tab-bar {
+/* ---- Sync badge ----------------------------------------------------------
+   State without colour: solid square = synced, hollow = pending, half = syncing. */
+.syncbadge { display: inline-flex; align-items: center; gap: var(--space-2); }
+.syncbadge-mark { width: 7px; height: 7px; border: 1px solid var(--text-muted); }
+.syncbadge.is-online  .syncbadge-mark { background: var(--text-muted); }
+.syncbadge.is-syncing .syncbadge-mark { background: linear-gradient(90deg, var(--text) 50%, transparent 50%); border-color: var(--text); }
+.syncbadge.is-offline .syncbadge-mark { background: transparent; }
+
+/* ---- Glass chrome --------------------------------------------------------- */
+.glass {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* ---- Tab bar -------------------------------------------------------------- */
+.tabbar {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 20;
   display: flex;
-  padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
-  box-shadow: var(--shadow-lg);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
 }
-.tab-bar-item {
+.tabbar-item {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  min-height: var(--tap);
   justify-content: center;
+  gap: 5px;
+  min-height: 60px;
   color: var(--text-faint);
-  border-radius: var(--radius);
+  text-decoration: none;
 }
-.tab-bar-item.is-active { color: var(--signal); }
-.tab-bar-icon { font-size: 18px; line-height: 1; }
-.tab-bar-label { font-size: 10px; font-weight: 500; letter-spacing: 0.02em; }
+.tabbar-item.is-active { color: var(--text); }
+.tabbar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.with-tabbar { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 
-/* Screens with a tab bar need bottom padding so content doesn't hide
-   behind it — ActiveWorkout has its own padding scheme and skips this. */
-.with-tab-bar { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+/* ---- Login ---------------------------------------------------------------- */
+.login-shell { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: var(--space-6); max-width: 400px; margin: 0 auto; }
+.login-mark { margin-bottom: var(--space-7); }
+.login-title { font-size: 34px; letter-spacing: -0.03em; line-height: 1; margin-bottom: var(--space-2); }
+.login-form { margin-top: var(--space-7); display: flex; flex-direction: column; gap: var(--space-4); }
+.login-note { font-size: var(--fs-xs); line-height: 1.6; color: var(--text-muted); margin-top: var(--space-6); }
+.login-note code { font-family: var(--font-mono); color: var(--text); font-size: 12px; }
 
-.history-screen { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); }
-.history-row {
+/* ---- Screen headers ------------------------------------------------------
+   Editorial, not centred: a wide-tracked micro label above a large condensed
+   title, hard-left. Same construction on every screen. */
+.screen-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-6); }
+.screen-title { font-size: 30px; letter-spacing: -0.025em; line-height: 1; margin-top: 6px; }
+.section-label { margin: var(--space-7) 0 var(--space-3); }
+
+/* ---- Today ---------------------------------------------------------------- */
+.next-card { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); }
+.next-day-name { font-size: 46px; letter-spacing: -0.03em; line-height: 0.9; }
+.next-meta { display: flex; gap: var(--space-5); }
+.day-row {
   width: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: var(--space-4);
+  gap: var(--space-4);
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-4);
   text-align: left;
+  color: var(--text);
 }
-.history-row-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 13px; }
+.day-row:active { background: var(--surface); }
+.day-row-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 18px; flex: none; }
+.day-row-name { flex: 1; font-weight: 500; }
 
-.body-screen { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); }
-
-.meals-screen { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); }
-.macro-summary { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
-.macro-bar-track { height: 6px; border-radius: 3px; background: var(--surface-alt); overflow: hidden; }
-.macro-bar-fill { height: 100%; background: var(--signal); border-radius: 3px; transition: width var(--dur-med) var(--ease-standard); }
-.meal-row { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: var(--space-4); text-align: left; }
-
-.insights-screen { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); padding-bottom: var(--space-6); }
-.insight-card { padding: var(--space-5); }
-
-.stepper-wrap { flex: 1; min-width: 0; }
-
-/* Workout header — sticky so elapsed time + sync status stay visible
-   however far you scroll into the exercise list. */
-.workout-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-4);
-  padding-top: calc(var(--space-4) + env(safe-area-inset-top));
+/* ---- Active workout ------------------------------------------------------- */
+.workout-shell { max-width: 480px; margin: 0 auto; padding-bottom: 96px; }
+.workout-shell.has-rest { padding-bottom: calc(34vh + var(--space-6)); }
+.workout-head {
   position: sticky;
   top: 0;
   z-index: 5;
-  /* Scroll-edge effect (§12): a soft fade where floating chrome meets
-     scrolling content, instead of a hard 1px divider. */
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 10px), transparent 100%);
-  mask-image: linear-gradient(to bottom, black calc(100% - 10px), transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  padding-top: calc(var(--space-3) + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--line);
 }
-.workout-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  z-index: -1;
-}
+.workout-clock { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
+.workout-body { padding: 0 var(--space-5); }
 
-/* One row per exercise, collapsed by default (§7 item 5: "current one
-   expanded, others collapsed to a single line showing 3/4 sets"). */
-.exercise-row {
+/* Exercise row: hanging monospace index, name, then a sets counter. The
+   index column is what makes a long list scannable one-handed mid-set. */
+.ex-row {
   width: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--space-3);
   min-height: var(--tap);
-  border-bottom: 1px solid var(--line);
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
+  padding: var(--space-3) 0;
   text-align: left;
+  color: var(--text-muted);
 }
-.exercise-row-active { color: var(--text); font-weight: 600; }
-.exercise-panel { margin-bottom: 4px; }
+.ex-row-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 20px; flex: none; }
+.ex-row-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-2); }
+.ex-row.is-open { color: var(--text); }
+.ex-row.is-open .ex-row-name { font-weight: 600; }
+.ex-row-count { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-faint); }
+.ex-row-count.is-done { color: var(--text); }
+.ex-panel { padding-bottom: var(--space-4); }
+.ex-target { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); padding: 0 0 var(--space-3) 32px; }
 
-.warn-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--warn);
-  margin-left: 6px;
-  vertical-align: middle;
+/* Hollow ring + label, never a coloured dot. */
+.si-mark {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--text-muted);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 1px 4px;
+  flex: none;
 }
 
-.set-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
+.strength-tag {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  color: var(--on-signal); background: var(--signal);
+  padding: 2px 5px; border-radius: 2px; flex: none;
 }
-.set-row-done { justify-content: space-between; }
-.set-row-done.is-pr { color: var(--pr); }
-.set-confirm { width: var(--tap); flex: none; border-radius: var(--radius); font-size: 20px; }
 
-/* Rest timer — the signature element (build-plan §6d). Bottom third of the
-   screen, readable from ten metres, no interaction required. */
-.rest-timer {
+/* ---- Set rows ------------------------------------------------------------- */
+.set-row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 0 var(--space-2) 32px; }
+.set-row-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 20px; flex: none; margin-left: -32px; padding-left: 12px; }
+.set-confirm { width: var(--tap); min-width: var(--tap); flex: none; }
+
+/* A logged set: dense monospace line, no input chrome. */
+.set-done {
+  display: flex; align-items: center; gap: var(--space-4);
+  padding: var(--space-3) 0 var(--space-3) 32px;
+  font-family: var(--font-mono); font-size: var(--fs-sm);
+}
+.set-done-load { flex: 1; }
+.set-done-rir { color: var(--text-faint); font-size: var(--fs-xs); }
+/* PR: the only inverted element in the list. Unmissable without colour. */
+.pr-chip {
+  font-family: var(--font-body);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  background: var(--pr-bg); color: var(--pr-fg);
+  padding: 2px 5px; border-radius: 2px;
+}
+/* Hold-to-delete progress: the row fills from the left as you hold, so the
+   destructive action is visible before it commits (build-plan §9: destructive
+   actions need more than a tap). */
+.set-done.is-holding { background: linear-gradient(90deg, var(--surface-high) var(--hold, 0%), transparent var(--hold, 0%)); }
+
+/* ---- Rest timer ----------------------------------------------------------
+   The signature element (build-plan §6d). Bottom third, inverted, readable
+   from a rack ten metres away, no interaction required. The bar drains
+   right-to-left underneath a knocked-out numeral. */
+.rest {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  height: 32vh;
-  min-height: 220px;
-  background: var(--surface);
-  border-top: 1px solid var(--line);
-  box-shadow: var(--shadow-lg); /* lifts it off the content scrolling behind it */
-  overflow: hidden;
+  height: 34vh;
+  min-height: 210px;
   z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+  background: var(--bg);
+  border-top: 1px solid var(--line-strong);
   padding-bottom: env(safe-area-inset-bottom);
+  display: grid;
+  place-items: center;
 }
-.rest-timer-bar {
+.rest-fill {
   position: absolute;
   inset: 0;
-  background: var(--signal-dim);
-  transform-origin: left; /* drains right-to-left as it shrinks */
+  background: var(--surface-high);
+  transform-origin: left;
 }
-.rest-timer-content { position: relative; z-index: 1; text-align: center; }
-.rest-timer-content .btn { margin-top: 16px; }
-.rest-timer.is-done .rest-timer-bar { animation: rest-flash 500ms ease-out; }
-@keyframes rest-flash {
-  0% { background: var(--signal); }
-  100% { background: var(--signal-dim); }
+.rest-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+.rest-label { color: var(--text-faint); }
+.rest-time { color: var(--text); }
+.rest.is-done .rest-fill { background: var(--signal); }
+.rest.is-done .rest-time, .rest.is-done .rest-label { color: var(--on-signal); }
+.rest.is-done .btn-ghost { color: var(--on-signal); opacity: 0.7; }
+
+/* ---- History -------------------------------------------------------------- */
+.hist-row {
+  width: 100%;
+  display: flex; align-items: center; gap: var(--space-4);
+  padding: var(--space-4) 0;
+  text-align: left; color: var(--text);
 }
+.hist-date { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 52px; flex: none; line-height: 1.3; }
+.hist-main { flex: 1; min-width: 0; }
+.hist-name { font-weight: 500; }
+.hist-stats { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); margin-top: 3px; }
+
+.detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.detail-cell { padding: var(--space-4); border-right: 1px solid var(--line); }
+.detail-cell:last-child { border-right: 0; }
+.detail-value { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+.ex-group { padding: var(--space-4) 0; }
+.ex-group-head { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: var(--space-3); color: var(--text); }
+.ex-group-name { font-weight: 600; }
+
+/* ---- Charts --------------------------------------------------------------- */
+.chart-panel { padding: var(--space-4) var(--space-2) var(--space-2); }
+
+/* ---- Meals ---------------------------------------------------------------- */
+.macro-block { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+.macro-hero { display: flex; align-items: baseline; gap: var(--space-2); }
+.macro-hero-target { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-faint); }
+.macro-track { height: 2px; background: var(--surface-high); position: relative; }
+.macro-fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); transition: width var(--dur-med) var(--ease-standard); }
+/* Past target reads as a hatched overrun rather than "more of the same". */
+.macro-fill.is-over { background: repeating-linear-gradient(90deg, var(--signal) 0 3px, transparent 3px 6px); }
+.macro-line { display: flex; flex-direction: column; gap: 6px; }
+
+.meal-row { width: 100%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) 0; text-align: left; color: var(--text); }
+.meal-name { flex: 1; min-width: 0; font-size: var(--fs-xs); line-height: 1.4; }
+.meal-kcal { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); flex: none; }
+.meal-slot { display: flex; align-items: center; gap: var(--space-3); }
+
+/* ---- Insights ------------------------------------------------------------- */
+.insight-block { padding: var(--space-5); }
+.vol-row { display: flex; flex-direction: column; gap: 6px; }
+.vol-head { display: flex; justify-content: space-between; align-items: baseline; }
+.vol-muscle { font-size: var(--fs-xs); text-transform: capitalize; }
+.vol-count { font-family: var(--font-mono); font-size: var(--fs-2xs); }
+/* In-band = solid, out-of-band = hollow with a marker at the 10-set minimum. */
+.vol-track { height: 3px; background: var(--surface-high); position: relative; }
+.vol-fill { position: absolute; inset: 0 auto 0 0; background: var(--text-faint); }
+.vol-fill.in-band { background: var(--signal); }
+.vol-min { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--line-strong); }
+
+.stat-line { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; width: 100%; text-align: left; color: var(--text); }
+
+/* ---- Settings ------------------------------------------------------------- */
+.set-block { padding: var(--space-5); }
+.err-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) 0; }
+
+/* ---- Empty states --------------------------------------------------------
+   §6f: empty states invite action, they don't just report emptiness. */
+.empty { padding: var(--space-8) 0; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.6; }

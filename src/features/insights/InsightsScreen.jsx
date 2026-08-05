@@ -1,6 +1,5 @@
 // Phase 6 (build-plan §7) — the analytics that only make sense once real
-// history exists. Every number here reads from Dexie only; nothing is
-// computed on the server.
+// history exists. Everything reads from Dexie; nothing is computed server-side.
 import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
@@ -10,9 +9,8 @@ import {
   weeklySetsPerMuscle, sessionPointsByExercise, detectStalls,
   deloadWeek, calorieAdjustSuggestion, siCorrelation,
 } from '../../lib/insights'
-import { MIN_SESSIONS_FOR_CORRELATION } from '../../lib/constants'
-
-const MUSCLE_TARGET = { min: 10, max: 20 }
+import { MIN_SESSIONS_FOR_CORRELATION, WEEKLY_SET_BAND, DELOAD_CYCLE_WEEKS } from '../../lib/constants'
+import Icon from '../../components/Icon'
 
 export default function InsightsScreen() {
   const navigate = useNavigate()
@@ -48,41 +46,61 @@ export default function InsightsScreen() {
 
   if (!ready) return null
 
+  const muscleRows = Object.entries(weeklySets).sort((a, b) => b[1] - a[1])
+
   return (
-    <div className="container insights-screen">
-      <header className="today-header"><span className="stepper-label">Insights</span></header>
+    <div className="container screen">
+      <header className="screen-head">
+        <div>
+          <p className="label">{workouts.length} session{workouts.length === 1 ? '' : 's'} logged</p>
+          <h1 className="readout screen-title">TRENDS</h1>
+        </div>
+      </header>
 
       {workouts.length === 0 ? (
-        <p className="muted">Log a few workouts first — insights need real history to say anything useful.</p>
+        <p className="empty">Log a few workouts first. These read real history — with none, they'd just be guesses.</p>
       ) : (
         <div className="stack-3">
           {week != null && (
-            <div className="card insight-card">
-              <h2 className="section-label">Deload countdown</h2>
-              <p className="numeral" style={{ fontSize: 32 }}>Week {week}<span className="muted" style={{ fontSize: 16 }}> of 7</span></p>
+            <div className="panel insight-block">
+              <p className="label">Deload countdown</p>
+              <p className="readout readout-lg" style={{ marginTop: 8 }}>
+                WEEK {week}<span className="faint" style={{ fontSize: 20 }}> / {DELOAD_CYCLE_WEEKS}</span>
+              </p>
+              {week === DELOAD_CYCLE_WEEKS && (
+                <p className="muted" style={{ fontSize: 13, marginTop: 8, lineHeight: 1.5 }}>
+                  Deload week. Same exercises, half the sets, ~60% of the weight. No hard sets.
+                </p>
+              )}
             </div>
           )}
 
-          <div className="card insight-card">
-            <h2 className="section-label">Weekly sets per muscle</h2>
-            <div className="stack-2">
-              {Object.entries(weeklySets).sort((a, b) => b[1] - a[1]).map(([muscle, count]) => (
-                <MuscleBar key={muscle} muscle={muscle} count={count} />
-              ))}
-              {Object.keys(weeklySets).length === 0 && <p className="muted" style={{ fontSize: 14 }}>No sets logged in the last 7 days.</p>}
-            </div>
+          <div className="panel insight-block">
+            <p className="label" style={{ marginBottom: 'var(--space-4)' }}>
+              Weekly sets · target {WEEKLY_SET_BAND.min}–{WEEKLY_SET_BAND.max}
+            </p>
+            {muscleRows.length === 0 ? (
+              <p className="muted" style={{ fontSize: 14 }}>No sets in the last 7 days.</p>
+            ) : (
+              <div className="stack-3">
+                {muscleRows.map(([muscle, count]) => <VolumeRow key={muscle} muscle={muscle} count={count} />)}
+              </div>
+            )}
           </div>
 
-          <div className="card insight-card">
-            <h2 className="section-label">Stalling lifts</h2>
+          <div className="panel insight-block">
+            <p className="label" style={{ marginBottom: 'var(--space-2)' }}>Stalling lifts</p>
             {stalls.length === 0 ? (
-              <p className="muted" style={{ fontSize: 14 }}>Nothing stalling — every lift with enough history is trending up.</p>
+              <p className="muted" style={{ fontSize: 14 }}>Nothing stalling. Every lift with 4+ sessions is trending up.</p>
             ) : (
-              <div className="stack-2">
+              <div className="rule-list">
                 {stalls.map((s) => (
-                  <button key={s.exerciseId} className="row pressable" style={{ width: '100%', textAlign: 'left' }} onClick={() => navigate(`/exercise/${s.exerciseId}`)}>
+                  <button key={s.exerciseId} className="stat-line pressable" onClick={() => navigate(`/exercise/${s.exerciseId}`)}>
                     <span>{s.name}</span>
-                    <span className="mono" style={{ color: 'var(--warn)' }}>flat / down</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="mono faint" style={{ fontSize: 12 }}>flat / down</span>
+                      <Icon name="chevron" size={14} className="faint" />
+                    </span>
                   </button>
                 ))}
               </div>
@@ -90,28 +108,38 @@ export default function InsightsScreen() {
           </div>
 
           {calorieSuggestion && (
-            <div className="card insight-card">
-              <h2 className="section-label">Calorie suggestion</h2>
-              <p style={{ fontSize: 15, marginBottom: 4 }}>
+            <div className="panel insight-block">
+              <p className="label">Calorie suggestion</p>
+              <p className="readout readout-md" style={{ marginTop: 8 }}>
                 {calorieSuggestion.delta > 0 ? '+' : ''}{calorieSuggestion.delta} kcal/day
               </p>
-              <p className="muted" style={{ fontSize: 13 }}>{calorieSuggestion.reason}</p>
+              <p className="muted" style={{ fontSize: 13, marginTop: 8, lineHeight: 1.5 }}>{calorieSuggestion.reason}</p>
             </div>
           )}
 
-          <div className="card insight-card">
-            <h2 className="section-label">SI joint signal</h2>
+          <div className="panel insight-block">
+            <p className="label" style={{ marginBottom: 'var(--space-2)' }}>SI joint signal</p>
             {correlations.length === 0 ? (
-              <p className="muted" style={{ fontSize: 14 }}>Not enough data yet — needs {MIN_SESSIONS_FOR_CORRELATION}+ sessions with a given exercise logged.</p>
+              <p className="muted" style={{ fontSize: 14, lineHeight: 1.55 }}>
+                Not enough data yet. An exercise needs {MIN_SESSIONS_FOR_CORRELATION}+ logged sessions before this can say anything worth reading.
+              </p>
             ) : (
-              <div className="stack-2">
-                {correlations.slice(0, 5).map((c) => (
-                  <p key={c.exerciseId} className="muted" style={{ fontSize: 14 }}>
-                    Sessions with <strong style={{ color: 'var(--text)' }}>{c.name}</strong> average{' '}
-                    <span style={{ color: c.diff > 0 ? 'var(--warn)' : 'var(--text)' }}>{c.diff > 0 ? '+' : ''}{c.diff.toFixed(1)}</span> points {c.diff >= 0 ? 'higher' : 'lower'} pain.
-                  </p>
-                ))}
-              </div>
+              <>
+                <div className="stack-3">
+                  {correlations.slice(0, 5).map((c) => (
+                    <p key={c.exerciseId} className="muted" style={{ fontSize: 14, lineHeight: 1.5 }}>
+                      Sessions with <span style={{ color: 'var(--text)' }}>{c.name}</span> average{' '}
+                      <span className="mono" style={{ color: 'var(--text)' }}>{c.diff > 0 ? '+' : ''}{c.diff.toFixed(1)}</span>{' '}
+                      points {c.diff >= 0 ? 'higher' : 'lower'} pain. <span className="faint">({c.sessionsWith} sessions)</span>
+                    </p>
+                  ))}
+                </div>
+                {/* build-plan §7: "Present as a signal to investigate, never a
+                    verdict." The disclaimer is part of the feature. */}
+                <p className="faint" style={{ fontSize: 12, marginTop: 'var(--space-4)', lineHeight: 1.5 }}>
+                  A correlation, not a cause. Use it to decide what to test, not what to cut.
+                </p>
+              </>
             )}
           </div>
         </div>
@@ -120,16 +148,22 @@ export default function InsightsScreen() {
   )
 }
 
-function MuscleBar({ muscle, count }) {
-  const pct = Math.min(100, (count / MUSCLE_TARGET.max) * 100)
-  const inBand = count >= MUSCLE_TARGET.min && count <= MUSCLE_TARGET.max
+// In-band volume reads as a solid bar; out-of-band as a faint one, with a
+// tick at the 10-set minimum so "under-target" is visible without colour.
+function VolumeRow({ muscle, count }) {
+  const pct = Math.min(100, (count / WEEKLY_SET_BAND.max) * 100)
+  const minPct = (WEEKLY_SET_BAND.min / WEEKLY_SET_BAND.max) * 100
+  const inBand = count >= WEEKLY_SET_BAND.min && count <= WEEKLY_SET_BAND.max
   return (
-    <div>
-      <div className="row" style={{ marginBottom: 4 }}>
-        <span className="muted" style={{ fontSize: 13, textTransform: 'capitalize' }}>{muscle.replace('_', ' ')}</span>
-        <span className="mono" style={{ fontSize: 13, color: inBand ? 'var(--pr)' : 'var(--text-muted)' }}>{count} sets</span>
+    <div className="vol-row">
+      <div className="vol-head">
+        <span className="vol-muscle">{muscle.replace(/_/g, ' ')}</span>
+        <span className="vol-count" style={{ color: inBand ? 'var(--text)' : 'var(--text-faint)' }}>{count}</span>
       </div>
-      <div className="macro-bar-track"><div className="macro-bar-fill" style={{ width: `${pct}%`, background: inBand ? 'var(--pr)' : 'var(--signal)' }} /></div>
+      <div className="vol-track">
+        <div className={`vol-fill ${inBand ? 'in-band' : ''}`} style={{ width: `${pct}%` }} />
+        <div className="vol-min" style={{ left: `${minPct}%` }} />
+      </div>
     </div>
   )
 }

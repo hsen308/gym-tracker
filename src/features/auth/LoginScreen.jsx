@@ -5,9 +5,8 @@ import Button from '../../components/Button'
 import Field from '../../components/Field'
 import Logomark from '../../components/Logomark'
 
-// This is a personal single-user app — there's no public sign-up form.
-// Create the one account once, in Supabase → Authentication → Users → Add user,
-// then sign in here with that email/password.
+// Personal single-user app — there's no public sign-up form. The one account
+// is created once in Supabase → Authentication → Users → Add user.
 export default function LoginScreen() {
   const { signInWithPassword, isSupabaseConfigured } = useAuth()
   const [email, setEmail] = useState('')
@@ -16,44 +15,40 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false)
 
   const submit = async (e) => {
-    e.preventDefault() // stop the browser's default full-page-reload form submit
+    e.preventDefault() // stop the browser's default full-page-reload submit
     setBusy(true)
     setError('')
     const { error } = await signInWithPassword(email, password)
     setBusy(false)
     if (error) setError(error.message)
-    // On success, onAuthStateChange in AuthProvider fires and the router
-    // guard re-renders past /login automatically — no manual redirect here.
+    // On success, onAuthStateChange fires in AuthProvider and the router
+    // redirects off /login automatically — no manual navigate() here.
   }
 
   return (
     <div className="login-shell">
-      {/* Entrance motion, not a scripted keyframe animation (apple-design §4)
-          — a critically-damped spring settles once and doesn't fight
-          interruption. MotionConfig at the app root already collapses this
-          to a plain fade when the OS asks for reduced motion. */}
+      {/* A spring, not a scripted keyframe (apple-design §4): critically
+          damped so it settles once without overshoot. MotionConfig at the app
+          root already collapses this to a plain fade under reduced motion. */}
       <motion.div
-        className="card login-card"
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+        transition={{ type: 'spring', bounce: 0, duration: 0.45 }}
       >
-        <Logomark size={44} />
-        <div className="login-heading">
-          <h1 className="numeral" style={{ fontSize: 24 }}>Gym Tracker</h1>
-          <p className="faint" style={{ fontSize: 13 }}>Training log</p>
-        </div>
+        <div className="login-mark"><Logomark size={34} /></div>
+        <h1 className="readout login-title">GYM<br />TRACKER</h1>
+        <p className="label">Training log · Built for Hussein</p>
 
         {!isSupabaseConfigured ? (
-          <p className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>
-            No Supabase project connected yet. Fill in <code>.env.local</code> with your project
-            URL and anon key, then restart the dev server.
+          <p className="login-note">
+            No Supabase project connected. Fill in <code>.env.local</code> with your project URL
+            and anon key, then restart the dev server.
           </p>
         ) : (
-          <form onSubmit={submit} className="stack-3">
+          <form onSubmit={submit} className="login-form">
             <Field label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
             <Field label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
-            {error && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{error}</p>}
+            {error && <p className="mono" style={{ fontSize: 13 }}>{error}</p>}
             <Button type="submit" className="btn-block" disabled={busy}>
               {busy ? 'Signing in…' : 'Sign in'}
             </Button>

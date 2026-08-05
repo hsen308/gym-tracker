@@ -1,111 +1,117 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 * { box-sizing: border-box; }
 
 html, body, #root {
   height: 100%;
   margin: 0;
+  background: var(--bg);
 }
 
 body {
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
   font-size: var(--fs-sm);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent; /* we draw our own press feedback */
-  overscroll-behavior-y: none; /* no rubber-band page bounce fighting our own sheets */
+  overscroll-behavior-y: none; /* no page bounce fighting our own sheets */
 }
 
-/* apple-design §15: tracking is size-specific, never one value for all sizes.
-   Large numerals get negative tracking; body text stays near zero. */
-.numeral {
+/* ---- Type ----------------------------------------------------------------
+   apple-design §15: tracking is size-specific, never one value for all sizes.
+   Big readouts get negative tracking and tight leading; micro labels get
+   wide positive tracking. That contrast is most of what makes this read as
+   an instrument rather than a generic app. */
+
+.readout {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums; /* digits don't jitter/reflow as they change */
+  font-weight: 700;
+  font-variant-numeric: tabular-nums; /* digits never jitter as they change */
+  letter-spacing: -0.01em;
+  line-height: 0.92;
 }
-.numeral-display {
-  font-size: var(--fs-2xl);
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+.readout-xl  { font-size: var(--fs-3xl); letter-spacing: -0.025em; }
+.readout-lg  { font-size: var(--fs-xl);  letter-spacing: -0.02em; }
+.readout-md  { font-size: var(--fs-lg);  letter-spacing: -0.015em; }
+
+/* The micro-label. Uppercase, wide-tracked, faint — the engraved text on a
+   machine panel. Every section and field in the app is titled with this. */
+.label {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  line-height: 1;
 }
-.numeral-lg { font-size: var(--fs-xl); letter-spacing: -0.015em; line-height: 1.05; }
+.label-strong { color: var(--text-muted); }
 
 .mono {
   font-family: var(--font-mono);
-  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
-button {
-  font-family: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-/* apple-design §1: feedback lives on press, is instant, and never waits
-   for release. Every tappable control in this app should compose this in. */
-.pressable {
-  min-height: var(--tap);
-  transition: transform var(--dur-fast) var(--ease-standard), opacity var(--dur-fast) var(--ease-standard);
-}
-.pressable:active {
-  transform: scale(0.97);
-  opacity: 0.85;
-}
-
-/* Visible keyboard focus — build-plan §6e explicitly forbids removing outlines. */
-:focus-visible {
-  outline: 2px solid var(--signal);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-/* apple-design §14: reduced transparency ≠ reduced motion. Handled
-   separately — translucent chrome goes solid, blur drops, independent of
-   whether the user also wants less motion. */
-@media (prefers-reduced-transparency: reduce) {
-  .glass { background: var(--surface) !important; backdrop-filter: none !important; }
-}
-@media (prefers-contrast: more) {
-  .glass, .card { border-color: var(--text-muted) !important; }
-}
-
-/* Layout utilities — every screen traces its spacing to these instead of
-   one-off inline styles, so rhythm stays consistent app-wide. */
-.container { max-width: 480px; margin: 0 auto; padding: 0 var(--space-5); }
-.stack-2 { display: flex; flex-direction: column; gap: var(--space-2); }
-.stack-3 { display: flex; flex-direction: column; gap: var(--space-3); }
-.row { display: flex; align-items: center; justify-content: space-between; }
 .muted { color: var(--text-muted); }
 .faint { color: var(--text-faint); }
 
-/* apple-design §12: a raised surface gets a border + shadow so it reads as
-   sitting above the background, not just a rectangle drawn on it. */
-.card {
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ---- Interaction ---------------------------------------------------------
+   apple-design §1: feedback lives on the press, is instant, and never waits
+   for release. Every tappable control composes .pressable. */
+.pressable {
+  transition: transform var(--dur-fast) var(--ease-standard),
+              opacity var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+.pressable:active { transform: scale(0.985); opacity: 0.7; }
+
+/* build-plan §6e explicitly forbids removing focus outlines. */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Layout --------------------------------------------------------------
+   Utilities so screens stop carrying one-off inline styles. */
+.container { max-width: 480px; margin: 0 auto; padding: 0 var(--space-5); }
+.screen    { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); }
+.stack-1 { display: flex; flex-direction: column; gap: var(--space-1); }
+.stack-2 { display: flex; flex-direction: column; gap: var(--space-2); }
+.stack-3 { display: flex; flex-direction: column; gap: var(--space-3); }
+.stack-5 { display: flex; flex-direction: column; gap: var(--space-5); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+
+/* A "panel" is the instrument-panel replacement for the shadowed card:
+   a flat plane separated by a hairline, not a floating rounded rectangle. */
+.panel {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius);
 }
+.panel-flush { border-left: 0; border-right: 0; border-radius: 0; }
 
-/* Translucent chrome — sticky headers, sheets. Content scrolls underneath;
-   the bright top border stands in for light catching a physical material. */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border-top: 1px solid var(--glass-top);
-}
+/* Hairline list: rows divided by rules, no gaps, no individual card chrome.
+   This is what makes dense data read as a readout instead of a feed. */
+.rule-list > * + * { border-top: 1px solid var(--line); }
 
-textarea, select {
+.divider { height: 1px; background: var(--line); border: 0; margin: 0; }
+
+textarea, select, input {
   font-family: inherit;
   font-size: var(--fs-sm);
   color: var(--text);
@@ -115,4 +121,24 @@ textarea, select {
   padding: var(--space-3);
   resize: none;
 }
-textarea:focus-visible, select:focus-visible { outline: 2px solid var(--signal); outline-offset: -1px; }
+textarea:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 1px solid var(--signal);
+  outline-offset: -1px;
+  border-color: var(--signal);
+}
+
+/* ---- Accessibility -------------------------------------------------------
+   apple-design §14: three independent signals, handled separately. Reduced
+   motion is not the same request as reduced transparency. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass { background: var(--surface) !important; backdrop-filter: none !important; }
+}
+@media (prefers-contrast: more) {
+  :root { --line: #4A4A52; --text-muted: #B8B8BE; --text-faint: #8E8E93; }
+}

@@ -1,54 +1,52 @@
-/* Design tokens — build-plan.md §6b.
-   The whole app is one dark theme, on purpose. No light-mode toggle. */
+/* Design tokens.
+   Direction: INSTRUMENT PANEL. The build plan called the subject "a scale
+   readout — the instrument character of a loaded barbell and a stopwatch."
+   Executed in strict monochrome: true black, hairline rules, condensed gauge
+   numerals. No colour anywhere, so hierarchy has to come from fill, weight
+   and inversion instead of hue — see the state tokens below.
+   One theme, on purpose. No light mode. */
 :root {
-  /* Surface — deep slate, not pure black; less smear under gym lighting */
-  --bg:          #14181F;
-  --surface:     #1C222C;
-  --surface-alt: #242C38;
-  --line:        #313B4A;
+  /* Surface — true black base, barely-lifted planes above it. Deliberately
+     tight steps: this reads as machined layers, not stacked cards. */
+  --bg:           #000000;
+  --surface:      #0B0B0C;
+  --surface-alt:  #151517;
+  --surface-high: #1E1E21;
 
-  /* Text */
-  --text:        #E9EDF3;
-  --text-muted:  #8B97A8;
-  --text-faint:  #5C6879;
+  /* Hairlines do the structural work that shadows used to. */
+  --line:         #232326;
+  --line-strong:  #38383E;
 
-  /* Signal — amber reads as load/effort; used ONLY for the active set
-     and the primary action. Never decorative. */
-  --signal:      #FF7A2F;
-  --signal-dim:  #C25A1E;
+  --text:         #FAFAFA;
+  --text-muted:   #8E8E93;
+  --text-faint:   #5A5A5F;
 
-  /* States */
-  --pr:          #47D39B;   /* personal record */
-  --warn:        #E4B33C;   /* SI joint caution */
-  --danger:      #E05252;
+  /* The "signal" is now white — the primary action is an INVERTED plane,
+     not a coloured one. Used sparingly: the active set, the primary button,
+     the rest timer fill. Never decorative. */
+  --signal:       #FFFFFF;
+  --on-signal:    #000000;
 
-  --radius:      10px;
-  --radius-lg:   20px;
-  --radius-sm:   7px;
-  --tap:         56px;      /* minimum tap target height */
+  /* States, expressed without hue (apple-design §16 craft: every element
+     earns its place; here every state has to earn a *shape*).
+       PR        — inverted chip, the only inverted thing in a row
+       caution   — hollow ring + "SI" label, never a coloured dot
+       danger    — hairline outline + explicit copy */
+  --pr-bg:        #FFFFFF;
+  --pr-fg:        #000000;
+  --caution-ring: #FAFAFA;
+  --danger-line:  #FAFAFA;
 
-  /* Spacing scale — replaces the ad-hoc px values that were scattered
-     through inline styles. Everything in the app should trace to one of these. */
+  --radius:     6px;   /* small — machined, not pill-soft */
+  --radius-lg:  14px;
+  --radius-sm:  3px;
+  --tap:        56px;  /* minimum tap target height */
+
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
-  --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 40px;
+  --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 44px;
 
-  /* apple-design §12: materials & depth. Dark-theme shadows are diffuse and
-     mostly opacity-driven — a light theme's crisp drop shadow reads as a
-     smudge here. Bigger surfaces (sheets) get a heavier shadow than small
-     chips (buttons), per the "bigger surfaces read as thicker" rule. */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.35), 0 1px 1px rgba(0,0,0,0.2);
-  --shadow-md: 0 6px 16px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-lg: 0 16px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.35);
-  --shadow-signal: 0 4px 20px rgba(255,122,47,0.28);
-
-  /* Translucent chrome (§12) — sticky header, bottom sheets. Content
-     scrolls underneath instead of vanishing behind a solid bar. */
-  --glass-bg:     rgba(28, 34, 44, 0.78);
-  --glass-border: rgba(233, 237, 243, 0.08);
-  --glass-top:    rgba(233, 237, 243, 0.06); /* bright top edge = light catching the material */
-  --glass-blur:   20px;
-
-  /* Type scale — build-plan §6c: 11/13/15/18/24/40/64 */
+  /* Type scale — build-plan §6c: 11/13/15/18/24/40/64, plus 80 for the
+     rest timer, which is meant to be read from a rack ten metres away. */
   --fs-2xs: 11px;
   --fs-xs:  13px;
   --fs-sm:  15px;
@@ -56,14 +54,23 @@
   --fs-lg:  24px;
   --fs-xl:  40px;
   --fs-2xl: 64px;
+  --fs-3xl: 80px;
 
-  --font-display: 'Archivo', system-ui, sans-serif;
-  --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+  /* Saira Condensed for readouts: condensed numerals are what scoreboards
+     and gauges use — more digits legible per unit width at distance.
+     Archivo for UI (industrial grotesque, holds up small). Plex Mono for
+     inline data so tabular figures never reflow mid-set. */
+  --font-display: 'Saira Condensed', 'Archivo', system-ui, sans-serif;
+  --font-body:    'Archivo', system-ui, sans-serif;
   --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
 
-  /* apple-design §4: critically-damped default for anything that isn't
-     gesture-driven (no overshoot — reserved for momentum-driven drags). */
+  /* apple-design §4: critically damped by default — no overshoot unless a
+     gesture carried momentum into it. */
   --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
-  --dur-fast: 120ms;
-  --dur-med:  220ms;
+  --dur-fast: 110ms;
+  --dur-med:  200ms;
+
+  /* Depth is near-flat by design. A shadow only appears where a surface
+     genuinely floats over scrolling content (sheets, the rest timer). */
+  --shadow-sheet: 0 -1px 0 var(--line-strong), 0 -24px 48px rgba(0,0,0,0.8);
 }
