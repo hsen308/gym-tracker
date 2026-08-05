@@ -491,18 +491,63 @@ export const MEAL_PRESETS = [
   dinner('200g grilled fish + grilled vegetables + small rice portion'),
 ]
 
+// Bump when the program above changes. Devices seeded at an older version
+// reconcile up to this one on next launch. The original "seed once, only if
+// program_days is empty" check was not enough: an early build seeded the six
+// day names with an EMPTY exercise list, and that check then permanently
+// short-circuited — the days existed, so the real program never loaded and
+// every workout screen came up blank.
+export const SEED_VERSION = 2
+
+// Reconcile, don't wipe and re-create. Exercises are matched BY NAME so their
+// ids survive, which matters because every logged set points at one — a
+// delete-and-reinsert would orphan your entire training history.
 export async function seedIfEmpty(userId) {
-  const existing = await db.program_days.count()
-  if (existing > 0) return
+  const storedVersion = (await db.meta.get('seed_version'))?.value ?? 0
+  const dayCount = await db.program_days.count()
+  const programCount = await db.program_exercises.count()
+  // Nothing to do only if we're current AND the program actually has content.
+  if (storedVersion >= SEED_VERSION && dayCount > 0 && programCount > 0) return
 
   const now = new Date().toISOString()
-  const exerciseRows = EXERCISES.map((e) => ({ id: newId(), user_id: userId, created_at: now, updated_at: now, deleted_at: null, ...e }))
+  const stamp = (row) => ({ user_id: userId, created_at: now, updated_at: now, deleted_at: null, ...row })
+
+  const [existingExercises, existingDays, existingMeals] = await Promise.all([
+    db.exercises.toArray(), db.program_days.toArray(), db.meal_presets.toArray(),
+  ])
+  const exerciseByName = Object.fromEntries(existingExercises.map((e) => [e.name, e]))
+  const dayByCode = Object.fromEntries(existingDays.map((d) => [d.code, d]))
+  const mealByName = Object.fromEntries(existingMeals.map((m) => [m.name, m]))
+
+  // Keep the existing id where the row already exists; only mint a new one for
+  // genuinely new rows. `deleted_at: null` also un-deletes anything that was
+  // soft-deleted by an older build.
+  const exerciseRows = EXERCISES.map((e) => ({
+    ...stamp(e),
+    id: exerciseByName[e.name]?.id ?? newId(),
+    created_at: exerciseByName[e.name]?.created_at ?? now,
+  }))
   const exerciseIdByName = Object.fromEntries(exerciseRows.map((e) => [e.name, e.id]))
 
-  const dayRows = PROGRAM_DAYS.map((d) => ({ id: newId(), user_id: userId, created_at: now, updated_at: now, deleted_at: null, ...d }))
+  const dayRows = PROGRAM_DAYS.map((d) => ({
+    ...stamp(d),
+    id: dayByCode[d.code]?.id ?? newId(),
+    created_at: dayByCode[d.code]?.created_at ?? now,
+  }))
   const dayIdByCode = Object.fromEntries(dayRows.map((d) => [d.code, d.id]))
 
-  const mealRows = MEAL_PRESETS.map((m) => ({ id: newId(), user_id: userId, is_custom: false, created_at: now, updated_at: now, deleted_at: null, ...m }))
+  // Custom foods you added yourself are never touched — only the presets that
+  // came from the program are reconciled.
+  const mealRows = MEAL_PRESETS.map((m) => ({
+    ...stamp({ is_custom: false, ...m }),
+    id: mealByName[m.name]?.id ?? newId(),
+    created_at: mealByName[m.name]?.created_at ?? now,
+  }))
+
+  // Fail loudly rather than silently seeding a day with missing exercises —
+  // a typo in DAY_PLANS would otherwise produce a workout screen with holes.
+  const missing = PROGRAM_EXERCISES.filter((pe) => !exerciseIdByName[pe.exercise_name])
+  if (missing.length) throw new Error(`[seed] Program references unknown exercises: ${missing.map((m) => m.exercise_name).join(', ')}`)
 
   const programExerciseRows = PROGRAM_EXERCISES.map((pe) => ({
     id: newId(),
@@ -518,22 +563,27 @@ export async function seedIfEmpty(userId) {
     rest_seconds: pe.rest_seconds ?? 90,
     is_strength_lift: pe.is_strength_lift ?? false,
     notes: pe.notes ?? null,
+    created_at: now,
     updated_at: now,
     deleted_at: null,
   }))
 
-  // Fail loudly rather than silently seeding a day with missing exercises —
-  // a typo in DAY_PLANS would otherwise produce a workout screen with holes.
-  const missing = PROGRAM_EXERCISES.filter((pe) => !exerciseIdByName[pe.exercise_name])
-  if (missing.length) throw new Error(`[seed] Program references unknown exercises: ${missing.map((m) => m.exercise_name).join(', ')}`)
-
   const outboxFor = (table, rows) => rows.map((r) => ({ table_name: table, op: 'upsert', row_id: r.id, created_at: now, attempts: 0 }))
 
-  await db.transaction('rw', db.exercises, db.program_days, db.program_exercises, db.meal_presets, db.outbox, async () => {
-    await db.exercises.bulkAdd(exerciseRows)
-    await db.program_days.bulkAdd(dayRows)
+  await db.transaction('rw', db.exercises, db.program_days, db.program_exercises, db.meal_presets, db.meta, db.outbox, async () => {
+    await db.exercises.bulkPut(exerciseRows)
+    await db.program_days.bulkPut(dayRows)
+    await db.meal_presets.bulkPut(mealRows)
+
+    // program_exercises is pure configuration and is the one table safe to
+    // replace outright: sets reference exercise_id directly (01-schema.sql:72
+    // is explicit about this), and their nullable program_exercise_id is only
+    // a convenience link. Rebuilding it is how a changed program takes effect.
+    const stale = await db.program_exercises.toArray()
+    await db.program_exercises.bulkDelete(stale.map((p) => p.id))
     await db.program_exercises.bulkAdd(programExerciseRows)
-    await db.meal_presets.bulkAdd(mealRows)
+
+    await db.meta.put({ key: 'seed_version', value: SEED_VERSION })
     await db.outbox.bulkAdd([
       ...outboxFor('exercises', exerciseRows),
       ...outboxFor('program_days', dayRows),
