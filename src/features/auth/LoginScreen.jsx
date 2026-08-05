@@ -7,7 +7,7 @@ import Field from '../../components/Field'
 // Create the one account once, in Supabase → Authentication → Users → Add user,
 // then sign in here with that email/password.
 export default function LoginScreen() {
-  const { signInWithPassword } = useAuth()
+  const { signInWithPassword, isSupabaseConfigured } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -27,14 +27,22 @@ export default function LoginScreen() {
   return (
     <div style={{ padding: 24, maxWidth: 380, margin: '96px auto' }}>
       <h1 className="numeral" style={{ fontSize: 28, marginBottom: 32 }}>Gym Tracker</h1>
-      <form onSubmit={submit}>
-        <Field label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
-        <Field label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
-        {error && <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-        <Button type="submit" className="btn-block" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
-        </Button>
-      </form>
+
+      {!isSupabaseConfigured ? (
+        <p style={{ color: 'var(--warn)', fontSize: 14, lineHeight: 1.5 }}>
+          No Supabase project connected yet. Fill in <code>.env.local</code> with your project
+          URL and anon key, then restart the dev server.
+        </p>
+      ) : (
+        <form onSubmit={submit}>
+          <Field label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+          <Field label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+          {error && <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{error}</p>}
+          <Button type="submit" className="btn-block" disabled={busy}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </Button>
+        </form>
+      )}
     </div>
   )
 }

@@ -4,7 +4,7 @@
 // of threading `user` through 10 nested components, any descendant just
 // calls useAuth() and reads it directly.
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../db/supabase'
+import { supabase, isSupabaseConfigured } from '../db/supabase'
 import { seedIfEmpty } from '../db/seed'
 
 const AuthContext = createContext(null)
@@ -16,7 +16,18 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    // With no real project wired up, there is nowhere for this call to go
+    // — skip it instead of letting a raw "Failed to fetch" surface from
+    // whichever call happened to run first. LoginScreen shows a clear
+    // "not configured" message in this case instead.
+    if (!isSupabaseConfigured) {
+      setSession(null)
+      return
+    }
+
+    supabase.auth.getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch(() => setSession(null)) // e.g. offline on first load — fail to "logged out", not a crash
 
     // Fires on login, logout, and token refresh — this is how the whole
     // app reacts to auth changes without polling anything.
@@ -36,6 +47,7 @@ export function AuthProvider({ children }) {
     session,
     user: session?.user ?? null,
     loading: session === undefined,
+    isSupabaseConfigured,
     signInWithPassword: (email, password) => supabase.auth.signInWithPassword({ email, password }),
     signOut: () => supabase.auth.signOut(),
   }

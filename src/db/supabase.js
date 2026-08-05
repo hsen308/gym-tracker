@@ -6,7 +6,13 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!url || !anonKey) {
+// Other modules (AuthProvider) check this before making ANY network call —
+// with no real project configured, there's nowhere for that call to go,
+// and it should fail visibly in one place, not as a raw "Failed to fetch"
+// bubbling up out of whatever happened to call it first.
+export const isSupabaseConfigured = Boolean(url && anonKey)
+
+if (!isSupabaseConfigured) {
   // Fails loudly at boot rather than silently breaking auth later. A
   // placeholder URL below keeps createClient() from throwing synchronously
   // (an undefined URL crashes the whole app on import) so the rest of the
