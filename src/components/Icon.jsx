@@ -30,6 +30,9 @@ const PATHS = {
   timer: <><circle cx="12" cy="13" r="8" /><path d="M12 13V9M9 3h6" /></>,
   download: <><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" /><path d="M4 20h16" /></>,
   upload: <><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5" /><path d="M4 20h16" /></>,
+  swap: <><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5" /></>,
+  info: <><circle cx="12" cy="12" r="8" /><path d="M12 11v5M12 8.5v.5" /></>,
+  share: <><path d="M12 15V4M8 7.5L12 3.5l4 4" /><path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" /></>,
 }
 
 export default function Icon({ name, size = 20, strokeWidth = 1.5, className = '', ...rest }) {

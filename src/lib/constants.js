@@ -31,5 +31,17 @@ export const MEAL_SLOTS = [
 // Program: deload every 7th week.
 export const DELOAD_CYCLE_WEEKS = 7
 
+// Program Part Three — the daily 5-minute SI routine, every day including
+// rest days. Fixed content, so it lives here rather than in the database.
+export const SI_ROUTINE = [
+  { name: 'Glute bridge', sets: '2 × 15', why: 'Glute activation, pelvis-friendly' },
+  { name: 'Side-lying clamshell', sets: '2 × 15 e/s', why: 'Glute medius = pelvic stability' },
+  { name: 'Dead bug', sets: '2 × 10 e/s', why: 'Core control, no spinal load' },
+  { name: 'Cat-cow (gentle)', sets: '10 slow', why: 'Mobility, no force' },
+]
+
+// Program Part Four practical rules — the daily targets worth a readout.
+export const DAILY_TARGETS = { steps: 9000, water_litres: 3.2, sleep_hours: 8 }
+
 // Program's weekly volume guidance, and the evidence-supported band it cites.
 export const WEEKLY_SET_BAND = { min: 10, max: 20 }

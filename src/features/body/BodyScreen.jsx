@@ -10,6 +10,7 @@ import Stepper from '../../components/Stepper'
 import Button from '../../components/Button'
 import Field from '../../components/Field'
 import Toast from '../../components/Toast'
+import DailyHabits from '../daily/DailyHabits'
 
 const WeightChart = lazy(() => import('./WeightChart'))
 const BLANK_MEASURE = { waist_cm: '', chest_cm: '', arm_cm: '', thigh_cm: '' }
@@ -121,6 +122,9 @@ export default function BodyScreen() {
           </Suspense>
         </div>
       )}
+
+      <h2 className="label section-label">Today</h2>
+      <DailyHabits />
 
       <h2 className="label section-label">Measurements</h2>
       <div className="panel" style={{ padding: 'var(--space-5)' }}>

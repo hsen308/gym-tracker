@@ -5,6 +5,8 @@ import { db, newId, upsertRow, updateRow, softDeleteRow } from '../../db/dexie'
 import { useElapsedSeconds } from '../../lib/useElapsed'
 import { formatDuration } from '../../lib/format'
 import { REST_SECONDS } from '../../lib/constants'
+import { programPhase } from '../../lib/phase'
+import { useProgramStart } from '../../lib/useProgramStart'
 import OfflineBadge from '../../components/OfflineBadge'
 import Sheet from '../../components/Sheet'
 import Icon from '../../components/Icon'
@@ -12,6 +14,7 @@ import Button from '../../components/Button'
 import ExercisePanel from './ExercisePanel'
 import RestTimer from './RestTimer'
 import FinishSheet from './FinishSheet'
+import SwapSheet from './SwapSheet'
 
 // The core screen (build-plan §7 Phase 1 item 5). Every write below goes
 // straight to Dexie and returns — nothing here awaits a network call (§0
@@ -33,11 +36,12 @@ export default function ActiveWorkout() {
       : []),
     [workout?.program_day_id],
   )
-  const exerciseIds = useMemo(() => programExercises?.map((pe) => pe.exercise_id) ?? [], [programExercises])
-  const exercises = useLiveQuery(
-    () => (exerciseIds.length ? db.exercises.where('id').anyOf(exerciseIds).toArray() : []),
-    [exerciseIds.join(',')],
+  // Per-slot session state: substitutions and traffic-light pain readings.
+  const slotState = useLiveQuery(
+    () => db.workout_exercises.where('workout_id').equals(workoutId).filter((r) => !r.deleted_at).toArray(),
+    [workoutId],
   )
+  const exercises = useLiveQuery(() => db.exercises.filter((e) => !e.deleted_at).toArray(), [])
   const sets = useLiveQuery(
     () => db.sets.where('workout_id').equals(workoutId).filter((s) => !s.deleted_at).sortBy('set_number'),
     [workoutId],
@@ -45,10 +49,13 @@ export default function ActiveWorkout() {
   const activeRest = useLiveQuery(() => db.active_rest.get(workoutId), [workoutId])
 
   const [expandedId, setExpandedId] = useState(null)
-  const [cueExerciseId, setCueExerciseId] = useState(null)
+  const [cueSlotId, setCueSlotId] = useState(null)
+  const [swapSlotId, setSwapSlotId] = useState(null)
   const [finishOpen, setFinishOpen] = useState(false)
 
   const elapsed = useElapsedSeconds(workout?.started_at)
+  const programStart = useProgramStart()
+  const phase = useMemo(() => programPhase(programStart), [programStart])
 
   // Keeps the screen awake for the session. Feature-detected because it
   // doesn't exist on iOS Safari (build-plan §9) — fails silently there.
@@ -58,28 +65,40 @@ export default function ActiveWorkout() {
     navigator.wakeLock?.request('screen').then((l) => {
       if (cancelled) l.release()
       else lock = l
-    }).catch(() => {}) // denied or unsupported — not worth surfacing
+    }).catch(() => {})
     return () => { cancelled = true; lock?.release?.().catch(() => {}) }
   }, [])
 
   // Bail out until every piece of state has resolved once — Dexie reads are
   // async, so on first paint these are all `undefined`. Rendering early with
   // partial data just flashes broken UI.
-  if (!workout || !programExercises || !exercises || !sets) return null
+  if (!workout || !programExercises || !exercises || !sets || !slotState) return null
 
   const exerciseById = Object.fromEntries(exercises.map((e) => [e.id, e]))
+  const slotByProgramId = Object.fromEntries(slotState.map((r) => [r.program_exercise_id, r]))
+
+  // The exercise actually being performed in a slot — the substitute if one
+  // was chosen, otherwise what the program says.
+  const resolveExercise = (pe) => {
+    const swapId = slotByProgramId[pe.id]?.swapped_exercise_id
+    return exerciseById[swapId] ?? exerciseById[pe.exercise_id]
+  }
+
   const setsByExercise = {}
   for (const s of sets) (setsByExercise[s.exercise_id] ??= []).push(s)
 
-  // Auto-advance: the open panel is the first exercise that still has sets
-  // left, unless you've explicitly tapped a different one. Without this you
-  // have to manually open every exercise as you work down the list.
-  const firstIncomplete = programExercises.find(
-    (pe) => (setsByExercise[pe.exercise_id]?.length ?? 0) < pe.target_sets,
-  )
-  const expanded = expandedId ?? firstIncomplete?.exercise_id ?? programExercises[0]?.exercise_id ?? null
+  // Auto-advance: the open panel is the first exercise that still has working
+  // sets left, unless you've explicitly tapped another. Without this you'd
+  // reopen every exercise by hand as you work down the list.
+  const firstIncomplete = programExercises.find((pe) => {
+    const ex = resolveExercise(pe)
+    const done = (setsByExercise[ex?.id] ?? []).filter((s) => !s.is_warmup).length
+    return done < pe.target_sets
+  })
+  const expanded = expandedId ?? firstIncomplete?.id ?? programExercises[0]?.id ?? null
 
   const totalTarget = programExercises.reduce((n, pe) => n + pe.target_sets, 0)
+  const workingDone = sets.filter((s) => !s.is_warmup).length
 
   const confirmSet = async (programExercise, exercise, draft) => {
     const now = new Date().toISOString()
@@ -93,20 +112,44 @@ export default function ActiveWorkout() {
       weight_kg: draft.weight_kg ?? null,
       reps: draft.reps ?? null,
       rir: draft.rir ?? null,
-      is_warmup: false,
+      is_warmup: draft.is_warmup ?? false,
       duration_seconds: draft.duration_seconds ?? null,
       completed_at: now,
       updated_at: now,
       deleted_at: null,
     })
-    // Confirming a set starts that exercise's rest timer (§7 item 5).
-    // Local-only — active_rest has no Supabase counterpart.
+    // Warm-up sets don't start a rest timer — the whole point of a ramp is to
+    // move through it, and a 3-minute countdown after an empty-bar set is noise.
+    if (draft.is_warmup) return
     await db.active_rest.put({
       workout_id: workoutId,
       exercise_id: exercise.id,
       started_at: now,
       duration_seconds: programExercise.rest_seconds ?? REST_SECONDS.COMPOUND_ACCESSORY,
     })
+  }
+
+  // Upsert-by-slot: one row per (workout, programmed slot), created lazily the
+  // first time you swap or record pain on it.
+  const patchSlot = async (programExerciseId, patch) => {
+    const existing = slotByProgramId[programExerciseId]
+    const now = new Date().toISOString()
+    if (existing) {
+      await updateRow('workout_exercises', existing.id, { ...patch, updated_at: now })
+    } else {
+      await upsertRow('workout_exercises', {
+        id: newId(),
+        user_id: workout.user_id,
+        workout_id: workoutId,
+        program_exercise_id: programExerciseId,
+        swapped_exercise_id: null,
+        pain_level: null,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+        ...patch,
+      })
+    }
   }
 
   // Soft delete (build-plan §3a): the row stays in Dexie with deleted_at set,
@@ -122,7 +165,10 @@ export default function ActiveWorkout() {
     navigate('/')
   }
 
-  const cueExercise = cueExerciseId ? exerciseById[cueExerciseId] : null
+  const cueSlot = programExercises.find((pe) => pe.id === cueSlotId)
+  const cueExercise = cueSlot ? resolveExercise(cueSlot) : null
+  const swapSlot = programExercises.find((pe) => pe.id === swapSlotId)
+  const swapProgrammed = swapSlot ? exerciseById[swapSlot.exercise_id] : null
 
   return (
     <div className={`workout-shell ${activeRest ? 'has-rest' : ''}`}>
@@ -132,19 +178,30 @@ export default function ActiveWorkout() {
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>{day?.name ?? '…'}</p>
-          <p className="workout-clock">{formatDuration(elapsed)} · {sets.length}/{totalTarget} sets</p>
+          <p className="workout-clock">{formatDuration(elapsed)} · {workingDone}/{totalTarget} sets</p>
         </div>
         <OfflineBadge />
       </header>
 
       <div className="workout-body">
+        {/* A reduced week changes what today is supposed to be — saying so once
+            at the top beats silently altering the numbers underneath you. */}
+        {phase?.title && (
+          <div className="phase-banner">
+            <p className="label">{phase.title}</p>
+            <p className="phase-note">{phase.note}</p>
+          </div>
+        )}
+
         {programExercises.length === 0 && (
           <p className="empty">This day has no exercises. Check the program seeded correctly.</p>
         )}
+
         <div className="rule-list">
           {programExercises.map((pe, i) => {
-            const exercise = exerciseById[pe.exercise_id]
+            const exercise = resolveExercise(pe)
             if (!exercise) return null
+            const slot = slotByProgramId[pe.id]
             return (
               <ExercisePanel
                 key={pe.id}
@@ -152,10 +209,15 @@ export default function ActiveWorkout() {
                 exercise={exercise}
                 programExercise={pe}
                 workoutId={workoutId}
+                phase={phase}
                 confirmedSets={setsByExercise[exercise.id] ?? []}
-                isExpanded={expanded === exercise.id}
-                onToggleExpand={() => setExpandedId(exercise.id)}
-                onOpenCues={() => setCueExerciseId(exercise.id)}
+                isExpanded={expanded === pe.id}
+                isSwapped={!!slot?.swapped_exercise_id}
+                painLevel={slot?.pain_level ?? null}
+                onPainChange={(pain_level) => patchSlot(pe.id, { pain_level })}
+                onToggleExpand={() => setExpandedId(pe.id)}
+                onOpenCues={() => setCueSlotId(pe.id)}
+                onOpenSwap={() => setSwapSlotId(pe.id)}
                 onConfirmSet={(draft) => confirmSet(pe, exercise, draft)}
                 onRemoveSet={removeSet}
               />
@@ -176,18 +238,18 @@ export default function ActiveWorkout() {
         />
       )}
 
-      <Sheet open={!!cueExercise} onClose={() => setCueExerciseId(null)}>
+      <Sheet open={!!cueExercise} onClose={() => setCueSlotId(null)}>
         {cueExercise && (
           <>
             <h2 className="sheet-title">{cueExercise.name}</h2>
-            {/* The SI note leads, per build-plan §7: the whole reason the sheet
-                exists is to put the caution in front of you at the moment it
-                matters — mid-set, deciding whether to add load. */}
+            {/* The SI note leads, per build-plan §7: the sheet exists to put
+                the caution in front of you at the moment it matters — mid-set,
+                deciding whether to add load. */}
             {cueExercise.si_risk === 'caution' && (
               <div className="panel" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
                 <p className="label" style={{ marginBottom: 6 }}>SI joint caution</p>
                 <p style={{ fontSize: 14, lineHeight: 1.5 }}>
-                  Watch load and position on this one. Stop before the hips tuck, stay symmetrical, never twist to grind a rep.
+                  Stop before the hips tuck, stay symmetrical, never twist to grind a rep. If it aches, cut the range and drop 20%.
                 </p>
               </div>
             )}
@@ -208,6 +270,15 @@ export default function ActiveWorkout() {
           </>
         )}
       </Sheet>
+
+      <SwapSheet
+        open={!!swapSlot}
+        onClose={() => setSwapSlotId(null)}
+        exercise={swapProgrammed}
+        isSwapped={!!slotByProgramId[swapSlotId]?.swapped_exercise_id}
+        onRevert={() => { patchSlot(swapSlotId, { swapped_exercise_id: null }); setSwapSlotId(null) }}
+        onSwap={(alt) => { patchSlot(swapSlotId, { swapped_exercise_id: alt.id }); setSwapSlotId(null) }}
+      />
 
       <FinishSheet open={finishOpen} onClose={() => setFinishOpen(false)} onFinish={finishWorkout} />
     </div>

@@ -61,12 +61,9 @@ export function detectStalls(pointsByExercise, exerciseById) {
   return stalls
 }
 
-// Week N of a 7-week block, counting from the first-ever logged workout.
-export function deloadWeek(firstWorkoutDate, today = new Date()) {
-  if (!firstWorkoutDate) return null
-  const weeksSince = Math.floor((today - new Date(firstWorkoutDate)) / (7 * 86_400_000))
-  return (weeksSince % 7) + 1
-}
+// (Week/deload maths moved to lib/phase.js — it drives the logging screen's
+// load and set adjustments too, not just this readout, and having two
+// implementations of "what week is it" was asking for them to disagree.)
 
 // build-plan §7 Phase 6 item 4, exact thresholds from the spec.
 export function calorieAdjustSuggestion({ weightTrendKgPerWeek, stalledLiftCount, avgEnergy }) {

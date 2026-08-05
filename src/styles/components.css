@@ -350,3 +350,114 @@
 /* ---- Empty states --------------------------------------------------------
    §6f: empty states invite action, they don't just report emptiness. */
 .empty { padding: var(--space-8) 0; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.6; }
+
+/* ---- Progression advice --------------------------------------------------
+   The one place in the logging path that tells you what to DO rather than
+   recording what you did — so "add weight" is inverted (the same treatment
+   as the primary button) while "hold" and "add reps" stay quiet. */
+.advice {
+  margin: 0 0 var(--space-3) 32px;
+  padding: var(--space-3) var(--space-4);
+  border-left: 2px solid var(--line-strong);
+  background: var(--surface);
+}
+.advice-add_weight { border-left-color: var(--signal); background: var(--surface-alt); }
+.advice-main { font-size: 13px; line-height: 1.45; }
+.advice-detail { font-size: 13px; line-height: 1.45; margin-top: 3px; color: var(--text-muted); }
+.advice-add_weight .advice-detail { color: var(--text); font-weight: 600; }
+
+.ex-history {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 0 0 var(--space-3) 32px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ex-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Secondary actions on an open exercise: quiet, evenly weighted, never
+   competing with the confirm button. */
+.ex-actions { display: flex; gap: var(--space-2); padding: 0 0 var(--space-3) 32px; flex-wrap: wrap; }
+.ex-action {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500;
+  color: var(--text-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 9px;
+  min-height: 34px;
+}
+.ex-action:active { background: var(--surface-alt); color: var(--text); }
+
+.plate-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 0 0 var(--space-2) 52px;
+  margin-top: -4px;
+}
+
+/* Warm-up sets read as scaffolding, not as work — dimmer, and marked "W"
+   instead of a set number so the working-set count stays honest. */
+.set-done.is-warmup { color: var(--text-faint); }
+.set-done.is-warmup .set-done-load { font-size: var(--fs-xs); }
+
+/* ---- Traffic-light pain --------------------------------------------------
+   Levels differ by FILL, not hue: empty ring / half / solid. The word
+   carries the meaning; the mark is only a quick visual anchor. */
+.pain-control { margin: var(--space-3) 0 var(--space-2) 32px; }
+.pain-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.pain-buttons { display: flex; gap: var(--space-2); }
+.pain-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500;
+  color: var(--text-faint);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  min-height: 36px;
+}
+.pain-btn.is-active { color: var(--on-signal); background: var(--signal); border-color: var(--signal); }
+.pain-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
+.pain-btn.is-yellow .pain-dot { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.pain-btn.is-red .pain-dot { background: currentColor; }
+.pain-hint { font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-top: var(--space-2); }
+
+/* ---- Phase banner --------------------------------------------------------
+   A week that deliberately reduces load/volume needs saying out loud, once,
+   rather than silently changing the numbers underneath you. */
+.phase-banner {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+}
+.phase-note { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 6px; }
+
+/* ---- Install prompt ------------------------------------------------------- */
+.install-prompt { padding: var(--space-4); margin-bottom: var(--space-4); }
+.install-copy { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 6px; }
+.install-ios {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+/* ---- Daily routine -------------------------------------------------------- */
+.routine { padding: var(--space-4); }
+.routine-head { display: flex; align-items: center; gap: var(--space-3); width: 100%; color: var(--text); }
+.routine-check {
+  width: 26px; height: 26px; flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  display: grid; place-items: center;
+  color: var(--on-signal);
+}
+.routine-check.is-done { background: var(--signal); border-color: var(--signal); }
+.routine-state { display: block; font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+.routine-list { list-style: none; margin: var(--space-4) 0 0; padding: var(--space-3) 0 0; border-top: 1px solid var(--line); }
+.routine-list li { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 13px; padding: 5px 0; color: var(--text-muted); }

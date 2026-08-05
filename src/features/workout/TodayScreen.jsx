@@ -12,6 +12,10 @@ import { todayLocalDate } from '../../lib/format'
 import Button from '../../components/Button'
 import OfflineBadge from '../../components/OfflineBadge'
 import Icon from '../../components/Icon'
+import InstallPrompt from '../../components/InstallPrompt'
+import DailyRoutine from '../daily/DailyRoutine'
+import { programPhase, weeksToDeload } from '../../lib/phase'
+import { useProgramStart } from '../../lib/useProgramStart'
 
 export default function TodayScreen() {
   const { user } = useAuth()
@@ -30,6 +34,9 @@ export default function TodayScreen() {
     for (const pe of all) counts[pe.program_day_id] = (counts[pe.program_day_id] ?? 0) + 1
     return counts
   }, [])
+
+  const programStart = useProgramStart()
+  const phase = programPhase(programStart)
 
   if (days === undefined || exerciseCounts === undefined) return null // first Dexie read still in flight
 
@@ -70,6 +77,8 @@ export default function TodayScreen() {
         <OfflineBadge />
       </header>
 
+      <InstallPrompt />
+
       {featured ? (
         <div className="panel next-card">
           <div>
@@ -85,7 +94,16 @@ export default function TodayScreen() {
               <p className="label">Exercises</p>
               <p className="mono" style={{ fontSize: 13, marginTop: 4 }}>{exerciseCounts[featured.id] ?? 0}</p>
             </div>
+            {phase?.week != null && (
+              <div>
+                <p className="label">Week</p>
+                <p className="mono" style={{ fontSize: 13, marginTop: 4 }}>
+                  {phase.week}{phase.kind === 'deload' ? ' · deload' : ''}
+                </p>
+              </div>
+            )}
           </div>
+          {phase?.note && <p className="phase-note">{phase.note}</p>}
           <Button
             className="btn-block"
             onClick={() => (unfinished ? navigate(`/workout/${unfinished.id}`) : startDay(featured))}
@@ -96,6 +114,10 @@ export default function TodayScreen() {
       ) : (
         <p className="empty">No program loaded yet.</p>
       )}
+
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <DailyRoutine />
+      </div>
 
       <h2 className="label section-label">All sessions</h2>
       <div className="panel rule-list">

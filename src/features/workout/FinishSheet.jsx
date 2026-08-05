@@ -8,13 +8,16 @@ import Button from '../../components/Button'
 export default function FinishSheet({ open, onClose, onFinish }) {
   const [siPain, setSiPain] = useState(0)
   const [energy, setEnergy] = useState(3)
+  // The program calls sleep "genuinely as important as the diet", and the
+  // schema has had a column for it since day one — it was just never asked for.
+  const [sleep, setSleep] = useState(8)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
   const finish = () => {
     if (saving) return
     setSaving(true)
-    onFinish({ si_pain_score: siPain, energy, notes: notes.trim() || null })
+    onFinish({ si_pain_score: siPain, energy, sleep_hours: sleep, notes: notes.trim() || null })
   }
 
   return (
@@ -24,6 +27,7 @@ export default function FinishSheet({ open, onClose, onFinish }) {
       <div className="stack-5">
         <Stepper label="SI joint pain · 0–10" value={siPain} onChange={setSiPain} step={1} min={0} max={10} />
         <Stepper label="Energy · 1–5" value={energy} onChange={setEnergy} step={1} min={1} max={5} />
+        <Stepper label="Sleep last night · hours" value={sleep} onChange={setSleep} step={0.5} min={0} max={14} format={(v) => `${v}h`} />
         <label className="field">
           <span className="label">Notes</span>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Optional" />

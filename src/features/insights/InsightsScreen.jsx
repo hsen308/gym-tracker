@@ -7,8 +7,10 @@ import { db } from '../../db/dexie'
 import { weightTrend } from '../../lib/calc'
 import {
   weeklySetsPerMuscle, sessionPointsByExercise, detectStalls,
-  deloadWeek, calorieAdjustSuggestion, siCorrelation,
+  calorieAdjustSuggestion, siCorrelation,
 } from '../../lib/insights'
+import { programPhase, weeksToDeload } from '../../lib/phase'
+import { useProgramStart } from '../../lib/useProgramStart'
 import { MIN_SESSIONS_FOR_CORRELATION, WEEKLY_SET_BAND, DELOAD_CYCLE_WEEKS } from '../../lib/constants'
 import Icon from '../../components/Icon'
 
@@ -27,11 +29,10 @@ export default function InsightsScreen() {
   const stalls = useMemo(() => (ready ? detectStalls(pointsByExercise, exerciseById) : []), [ready, pointsByExercise, exerciseById])
   const correlations = useMemo(() => (ready ? siCorrelation(workouts, sets, exerciseById) : []), [ready, workouts, sets, exerciseById])
 
-  const firstWorkoutDate = useMemo(() => {
-    if (!workouts?.length) return null
-    return workouts.reduce((min, w) => (w.date < min ? w.date : min), workouts[0].date)
-  }, [workouts])
-  const week = deloadWeek(firstWorkoutDate)
+  const programStart = useProgramStart()
+  const phase = programPhase(programStart)
+  const week = phase?.week ?? null
+  const toDeload = weeksToDeload(week)
 
   const trend = ready ? weightTrend(bwLogs) : null
   const avgEnergy = useMemo(() => {
@@ -63,15 +64,21 @@ export default function InsightsScreen() {
         <div className="stack-3">
           {week != null && (
             <div className="panel insight-block">
-              <p className="label">Deload countdown</p>
+              <p className="label">Programme week</p>
               <p className="readout readout-lg" style={{ marginTop: 8 }}>
-                WEEK {week}<span className="faint" style={{ fontSize: 20 }}> / {DELOAD_CYCLE_WEEKS}</span>
+                WEEK {week}
+                <span className="faint" style={{ fontSize: 20 }}>
+                  {' '}/ {DELOAD_CYCLE_WEEKS}-week block
+                </span>
               </p>
-              {week === DELOAD_CYCLE_WEEKS && (
-                <p className="muted" style={{ fontSize: 13, marginTop: 8, lineHeight: 1.5 }}>
-                  Deload week. Same exercises, half the sets, ~60% of the weight. No hard sets.
-                </p>
-              )}
+              <p className="muted" style={{ fontSize: 13, marginTop: 8, lineHeight: 1.5 }}>
+                {phase.kind === 'deload'
+                  ? 'Deload week. Same exercises, half the sets, ~60% of the weight. No hard sets.'
+                  : toDeload === 1
+                    ? 'Deload next week.'
+                    : `${toDeload} weeks to deload.`}
+              </p>
+              {phase.kind === 'return' && <p className="muted" style={{ fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>{phase.note}</p>}
             </div>
           )}
 

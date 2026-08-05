@@ -3,6 +3,31 @@ import { motion } from 'motion/react'
 import { formatDuration } from '../../lib/format'
 import Button from '../../components/Button'
 
+// Two short tones synthesised on the fly — no audio asset to ship, cache or
+// fail to load. Wrapped in try/catch because Safari refuses to create an
+// AudioContext until the page has had a user gesture, and a rest timer that
+// throws on some devices is worse than one that's silent on them.
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    ;[0, 0.18].forEach((offset) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = 880
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset)
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + offset + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.14)
+      osc.connect(gain).connect(ctx.destination)
+      osc.start(ctx.currentTime + offset)
+      osc.stop(ctx.currentTime + offset + 0.15)
+    })
+    setTimeout(() => ctx.close(), 800)
+  } catch {
+    // No audio available — the vibration and the inverted screen still fire.
+  }
+}
+
 // build-plan §6d — the signature element. Bottom third of the screen,
 // readable from a rack ten metres away, no interaction required.
 //
@@ -34,6 +59,7 @@ export default function RestTimer({ startedAt, durationSeconds, onSkip }) {
     if (done && !buzzed.current) {
       buzzed.current = true
       navigator.vibrate?.(200) // feature-detected — silently no-ops on iOS Safari
+      beep() // vibration alone is easy to miss with headphones in
     }
   }, [done])
 

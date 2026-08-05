@@ -37,6 +37,18 @@ db.version(1).stores({
   active_rest: 'workout_id',
 })
 
+// v2 — per-slot session state and daily habits (see 04-schema-coaching.sql).
+db.version(2).stores({
+  // One row per (workout, programmed slot). Holds the two things that vary
+  // per session without changing the program: a substituted exercise, and
+  // the traffic-light pain reading for that lift. Compound index so the
+  // logging screen can look a slot up directly.
+  workout_exercises: 'id, workout_id, [workout_id+program_exercise_id]',
+  // One row per calendar day: the program's daily SI routine plus the habits
+  // it prescribes (steps, cardio, water). Keyed by local date string.
+  daily_logs: 'id, &date',
+})
+
 // IDs are generated on-device, never assigned by a server — a set confirmed
 // with the phone in airplane mode still needs a permanent, unique id right
 // then. crypto.randomUUID() is a browser built-in; collision odds are
@@ -65,7 +77,7 @@ export async function getLastPerformanceByExercise(exerciseId, excludeWorkoutId)
 // so "write locally + queue for Supabase" (build-plan §5) can't be
 // forgotten at a call site. Local write and outbox entry happen together;
 // the UI never waits for either — both are plain IndexedDB writes.
-const SYNCED_TABLES = new Set(['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs'])
+const SYNCED_TABLES = new Set(['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs', 'workout_exercises', 'daily_logs'])
 
 async function queuePush(table, rowId) {
   if (!SYNCED_TABLES.has(table)) return // e.g. active_rest — local-only, never synced
