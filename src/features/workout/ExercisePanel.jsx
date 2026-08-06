@@ -60,6 +60,15 @@ export default function ExercisePanel({
     [sessions, programExercise, exercise],
   )
 
+  // What the recommended load becomes after a return/deload week scales it.
+  // null when this week doesn't reduce anything, so the extra line only
+  // appears when the two numbers would actually differ.
+  const reducedTarget = useMemo(() => {
+    if (!advice?.nextWeight || !phase || phase.loadPct >= 1) return null
+    const adjusted = adjustedWeight(advice.nextWeight, phase)
+    return adjusted === advice.nextWeight ? null : adjusted
+  }, [advice?.nextWeight, phase])
+
   const [draft, setDraft] = useState(null)
   useEffect(() => {
     setDraft(seedDraft({ nextSetNumber, lastPerformance, working, programExercise, isDuration, advice, phase }))
@@ -115,6 +124,14 @@ export default function ExercisePanel({
         <div className={`advice advice-${advice.action}`}>
           <p className="advice-main">{advice.message}</p>
           {advice.detail && <p className="advice-detail">{advice.detail}</p>}
+          {/* On a reduced week the advice and the pre-filled weight would
+              otherwise contradict each other — "add 2.5kg → 72.5kg" above a
+              stepper sitting at 40kg. Say which number applies today. */}
+          {reducedTarget != null && (
+            <p className="advice-today">
+              {phase.kind === 'deload' ? 'Deload' : `Week ${phase.week}`} — work at {formatWeight(reducedTarget)} today.
+            </p>
+          )}
         </div>
       )}
 

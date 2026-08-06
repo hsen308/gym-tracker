@@ -3,6 +3,7 @@ import { MotionConfig } from 'motion/react'
 import { AuthProvider } from './app/AuthProvider'
 import { SyncProvider } from './app/SyncProvider'
 import AppRouter from './app/router'
+import ErrorBoundary from './app/ErrorBoundary'
 
 export default function App() {
   return (
@@ -16,7 +17,11 @@ export default function App() {
           {/* Needs useAuth (to know when to start/stop syncing), so it nests
               inside AuthProvider rather than sitting beside it. */}
           <SyncProvider>
-            <AppRouter />
+            {/* Inside the providers so a crashed screen still shows the
+                error page rather than a blank document. */}
+            <ErrorBoundary>
+              <AppRouter />
+            </ErrorBoundary>
           </SyncProvider>
         </AuthProvider>
       </BrowserRouter>

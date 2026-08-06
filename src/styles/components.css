@@ -63,7 +63,15 @@
 /* ---- Sheet ---------------------------------------------------------------
    Dismiss by swipe, never a precise close tap (§6e). Translucency is the one
    place the app uses a material — content genuinely passes underneath it. */
+/* Enter/exit are CSS transitions driven by an .is-visible class — see the
+   note in Sheet.jsx for why this isn't AnimatePresence.
+   `pointer-events: none` while hidden is load-bearing: it makes it
+   structurally impossible for a stale scrim to block the whole app. */
 .sheet-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.66); z-index: 40; }
+/* Insurance, not decoration: a scrim that is fully transparent must never be
+   able to swallow taps. If it is ever left mounted mid-fade by a bug, the app
+   underneath stays usable instead of going silently dead. */
+.sheet-scrim[style*="opacity: 0"] { pointer-events: none; }
 .sheet {
   position: fixed;
   left: 0; right: 0; bottom: 0;
@@ -351,6 +359,19 @@
    §6f: empty states invite action, they don't just report emptiness. */
 .empty { padding: var(--space-8) 0; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.6; }
 
+.error-dump {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin: 0;
+}
+
 /* ---- Progression advice --------------------------------------------------
    The one place in the logging path that tells you what to DO rather than
    recording what you did — so "add weight" is inverted (the same treatment
@@ -365,6 +386,13 @@
 .advice-main { font-size: 13px; line-height: 1.45; }
 .advice-detail { font-size: 13px; line-height: 1.45; margin-top: 3px; color: var(--text-muted); }
 .advice-add_weight .advice-detail { color: var(--text); font-weight: 600; }
+/* The reduced-week override outranks the progression target it sits under,
+   so it gets the weight and the rule above it goes quiet. */
+.advice-today {
+  font-size: 13px; line-height: 1.45; font-weight: 600;
+  margin-top: 6px; padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
 
 .ex-history {
   font-family: var(--font-mono);
