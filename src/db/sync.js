@@ -14,6 +14,24 @@ const MAX_ATTEMPTS = 5
 // whole queue next cycle." An entry only gets skipped once it's failed
 // MAX_ATTEMPTS times, at which point it's parked in sync_errors instead of
 // blocking every entry behind it forever.
+// Put parked entries back in the queue. A row lands in sync_errors when the
+// server rejects it five times — which in practice means a schema problem,
+// not a transient one. Once that's fixed the rows are no longer queued
+// anywhere, so without this they'd stay stranded locally forever.
+export async function retrySyncErrors() {
+  const errors = await db.sync_errors.toArray()
+  if (!errors.length) return 0
+
+  const now = new Date().toISOString()
+  await db.transaction('rw', db.outbox, db.sync_errors, async () => {
+    for (const e of errors) {
+      await db.outbox.add({ table_name: e.table_name, op: 'upsert', row_id: e.row_id, created_at: now, attempts: 0 })
+      await db.sync_errors.delete(e.id)
+    }
+  })
+  return errors.length
+}
+
 export async function drainOutbox() {
   if (!isSupabaseConfigured || !navigator.onLine) return
 

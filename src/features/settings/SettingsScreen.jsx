@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, softDeleteRow } from '../../db/dexie'
+import { retrySyncErrors } from '../../db/sync'
 import Sheet from '../../components/Sheet'
 import { downloadExport, importAll, readFileAsJson } from '../../db/export'
 import { useAuth } from '../../app/AuthProvider'
@@ -36,6 +37,21 @@ export default function SettingsScreen() {
   }
 
   const syncErrors = useLiveQuery(() => db.sync_errors.orderBy('failed_at').reverse().toArray(), []) ?? []
+  // Eight identical "missing column" rows say one thing, not eight — used to
+  // pick wording that points at the actual fix.
+  const distinctErrors = new Set(syncErrors.map((e) => e.message))
+
+  const handleRetry = async () => {
+    setBusy(true)
+    try {
+      const n = await retrySyncErrors()
+      await sync?.syncNow?.()
+      const left = await db.sync_errors.count()
+      setToast(left === 0 ? `${n} item${n === 1 ? '' : 's'} uploaded.` : `${left} still failing — is the schema updated?`)
+    } finally {
+      setBusy(false)
+    }
+  }
   const counts = useLiveQuery(async () => ({
     workouts: await db.workouts.filter((w) => !w.deleted_at).count(),
     sets: await db.sets.filter((s) => !s.deleted_at).count(),
@@ -90,10 +106,17 @@ export default function SettingsScreen() {
         {syncErrors.length > 0 && (
           <section className="panel set-block">
             <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Sync errors</p>
-            <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-3)', lineHeight: 1.5 }}>
-              These failed to upload five times and were set aside so they don't block everything behind them.
-              Your data is still safe on this phone.
+            <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>
+              {distinctErrors.size === 1 && [...distinctErrors][0].includes('column')
+                ? "The cloud database is missing a column these rows need — run the latest schema file in Supabase, then retry. Nothing is lost; it's all still on this phone."
+                : "These failed to upload five times and were set aside so they don't block everything behind them. Your data is still safe on this phone."}
             </p>
+            {/* Retrying is the whole point of showing these. Parked rows are
+                no longer in the outbox, so fixing the cause upstream does
+                nothing on its own — they need putting back in the queue. */}
+            <Button variant="secondary" className="btn-block" style={{ marginBottom: 'var(--space-4)' }} onClick={handleRetry} disabled={busy}>
+              Retry {syncErrors.length} item{syncErrors.length === 1 ? '' : 's'}
+            </Button>
             <div className="rule-list">
               {syncErrors.map((e) => (
                 <div key={e.id} className="err-row">
