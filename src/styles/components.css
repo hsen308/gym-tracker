@@ -477,6 +477,17 @@
 .meal-kcal { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); flex: none; }
 .meal-slot { display: flex; align-items: center; gap: var(--space-3); }
 
+/* The day estimate, once set, becomes the headline entry for the day —
+   tappable to correct, with the note visible so the number stays readable
+   in a month's time. */
+.estimate-card {
+  display: block; width: 100%; text-align: left;
+  padding: var(--space-4); margin-top: var(--space-4);
+  background: var(--signal-soft); border-color: var(--signal);
+}
+.estimate-macros { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--signal); margin-top: var(--space-2); }
+.estimate-notes { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.5; margin-top: var(--space-2); }
+
 /* ---- Insights ------------------------------------------------------------- */
 .insight-block { padding: var(--space-5); }
 .vol-row { display: flex; flex-direction: column; gap: 6px; }

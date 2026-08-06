@@ -14,6 +14,7 @@ import Sheet from '../../components/Sheet'
 import Button from '../../components/Button'
 import Field from '../../components/Field'
 import Icon from '../../components/Icon'
+import DayEstimateSheet from './DayEstimateSheet'
 
 export default function MealsScreen() {
   const { user } = useAuth()
@@ -27,9 +28,15 @@ export default function MealsScreen() {
 
   const [openMeal, setOpenMeal] = useState(null)
   const [customOpen, setCustomOpen] = useState(false)
+  const [estimateOpen, setEstimateOpen] = useState(false)
   const [draft, setDraft] = useState({ name: '', calories: '', protein_g: '', carbs_g: '', fat_g: '' })
 
   if (!presets || !todayLogs) return null
+
+  // A whole-day estimate stands in for the individual meals rather than
+  // adding to them, so the two modes can't silently double a day's totals.
+  const dayEstimate = todayLogs.find((l) => l.is_day_estimate)
+  const mealLogs = todayLogs.filter((l) => !l.is_day_estimate)
 
   const totals = todayLogs.reduce((a, l) => ({
     calories: a.calories + l.calories, protein_g: a.protein_g + l.protein_g,
@@ -38,6 +45,25 @@ export default function MealsScreen() {
 
   const bySlot = {}
   for (const p of presets) (bySlot[p.meal_type ?? 'custom'] ??= []).push(p)
+
+  const saveEstimate = async (v) => {
+    const now = new Date().toISOString()
+    await upsertRow('meal_logs', {
+      id: dayEstimate?.id ?? newId(),
+      user_id: user.id,
+      date: today,
+      meal_preset_id: null,
+      name: 'Whole day (estimate)',
+      calories: v.calories, protein_g: v.protein_g, carbs_g: v.carbs_g, fat_g: v.fat_g,
+      notes: v.notes.trim() || null,
+      is_day_estimate: true,
+      logged_at: dayEstimate?.logged_at ?? now,
+      created_at: dayEstimate?.created_at ?? now,
+      updated_at: now,
+      deleted_at: null,
+    })
+    setEstimateOpen(false)
+  }
 
   const logMeal = async (meal) => {
     const now = new Date().toISOString()
@@ -70,7 +96,9 @@ export default function MealsScreen() {
     <div className="container screen">
       <header className="screen-head">
         <div>
-          <p className="label">{todayLogs.length} logged today</p>
+          <p className="label">
+            {dayEstimate ? 'Estimated for the day' : `${mealLogs.length} logged today`}
+          </p>
           <h1 className="readout screen-title">MEALS</h1>
         </div>
       </header>
@@ -87,6 +115,26 @@ export default function MealsScreen() {
         <MacroLine label="Carbs" value={totals.carbs_g} target={MACRO_TARGET.carbs_g} />
         <MacroLine label="Fat" value={totals.fat_g} target={MACRO_TARGET.fat_g} />
       </div>
+
+      {/* Offered first, and prominently: on most days this is the realistic
+          way the day gets logged at all. Tapping through four presets is the
+          exception, not the default. */}
+      {dayEstimate ? (
+        <button className="panel estimate-card pressable" onClick={() => setEstimateOpen(true)}>
+          <div className="row">
+            <span className="label label-strong">Today, estimated</span>
+            <span className="mono faint" style={{ fontSize: 12 }}>Edit</span>
+          </div>
+          <p className="estimate-macros">
+            {dayEstimate.calories} kcal · {dayEstimate.protein_g}p · {dayEstimate.carbs_g}c · {dayEstimate.fat_g}f
+          </p>
+          {dayEstimate.notes && <p className="estimate-notes">{dayEstimate.notes}</p>}
+        </button>
+      ) : (
+        <Button className="btn-block" style={{ marginTop: 'var(--space-4)' }} onClick={() => setEstimateOpen(true)}>
+          Estimate the whole day
+        </Button>
+      )}
 
       {MEAL_SLOTS.map((slot) => (
         bySlot[slot.key]?.length ? (
@@ -125,11 +173,11 @@ export default function MealsScreen() {
         <Icon name="plus" size={18} /> Custom food
       </Button>
 
-      {todayLogs.length > 0 && (
+      {mealLogs.length > 0 && (
         <>
           <h2 className="label label-strong section-label">Logged today</h2>
           <div className="panel rule-list">
-            {todayLogs.map((l) => (
+            {mealLogs.map((l) => (
               <div key={l.id} className="meal-row" style={{ padding: 'var(--space-3) var(--space-4)' }}>
                 <span className="meal-name">{l.name}</span>
                 <span className="meal-kcal">{l.calories}</span>
@@ -141,6 +189,14 @@ export default function MealsScreen() {
           </div>
         </>
       )}
+
+      <DayEstimateSheet
+        open={estimateOpen}
+        onClose={() => setEstimateOpen(false)}
+        existing={dayEstimate}
+        onSave={saveEstimate}
+        onDelete={() => { softDeleteRow('meal_logs', dayEstimate.id); setEstimateOpen(false) }}
+      />
 
       <Sheet open={!!openMeal} onClose={() => setOpenMeal(null)}>
         {openMeal && (

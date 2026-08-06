@@ -13,3 +13,16 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// When a new service worker takes over an already-open page, the JS running
+// right now is the OLD build while the caches are the new one. Reloading once
+// puts them back in step. The flag stops the reload looping if a worker
+// changes again mid-session.
+if ('serviceWorker' in navigator) {
+  let reloading = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return
+    reloading = true
+    window.location.reload()
+  })
+}

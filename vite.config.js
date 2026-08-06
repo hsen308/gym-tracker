@@ -13,8 +13,11 @@ export default defineConfig({
         name: 'Gym Tracker',
         short_name: 'Gym',
         description: 'Personal training log',
-        theme_color: '#000000',
-        background_color: '#000000',
+        // Must track tokens.css — this is the colour the OS paints around the
+        // installed app and behind the splash, so a stale value here shows as
+        // a black frame round a light app.
+        theme_color: '#F5F3EE',
+        background_color: '#F5F3EE',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -24,7 +27,15 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,ico}']
+        globPatterns: ['**/*.{js,css,html,svg,ico}'],
+        // Without these, a deploy doesn't show up until the app has been
+        // fully closed and reopened — the old worker keeps serving the old
+        // cached bundle, so a fresh deploy looks like nothing happened.
+        // skipWaiting activates the new worker immediately; clientsClaim
+        // hands it the already-open page.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
       }
     })
   ]
