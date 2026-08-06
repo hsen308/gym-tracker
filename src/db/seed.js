@@ -497,7 +497,9 @@ export const MEAL_PRESETS = [
 // day names with an EMPTY exercise list, and that check then permanently
 // short-circuited — the days existed, so the real program never loaded and
 // every workout screen came up blank.
-export const SEED_VERSION = 2
+// 3 — program_exercises ids are now stable across re-seeds, and this pass
+//     repairs the dangling references version 2 left behind.
+export const SEED_VERSION = 3
 
 // Reconcile, don't wipe and re-create. Exercises are matched BY NAME so their
 // ids survive, which matters because every logged set points at one — a
@@ -549,46 +551,86 @@ export async function seedIfEmpty(userId) {
   const missing = PROGRAM_EXERCISES.filter((pe) => !exerciseIdByName[pe.exercise_name])
   if (missing.length) throw new Error(`[seed] Program references unknown exercises: ${missing.map((m) => m.exercise_name).join(', ')}`)
 
-  const programExerciseRows = PROGRAM_EXERCISES.map((pe) => ({
-    id: newId(),
-    user_id: userId,
-    program_day_id: dayIdByCode[pe.day_code],
-    exercise_id: exerciseIdByName[pe.exercise_name],
-    order_index: pe.order_index,
-    target_sets: pe.target_sets,
-    rep_min: pe.rep_min,
-    rep_max: pe.rep_max,
-    target_rir_min: pe.target_rir_min ?? null,
-    target_rir_max: pe.target_rir_max ?? null,
-    rest_seconds: pe.rest_seconds ?? 90,
-    is_strength_lift: pe.is_strength_lift ?? false,
-    notes: pe.notes ?? null,
-    created_at: now,
-    updated_at: now,
-    deleted_at: null,
-  }))
+  // A slot's identity is (day, position) — that's the natural key, and it's
+  // what lets a re-seed keep the SAME id. Minting fresh ids here orphaned
+  // every sets.program_exercise_id and workout_exercises.program_exercise_id
+  // pointing at the old row: harmless in Dexie, which doesn't enforce foreign
+  // keys, but Postgres rejects the orphan and sync dies on it.
+  const existingProgramExercises = await db.program_exercises.toArray()
+  const slotKey = (dayId, orderIndex) => `${dayId}|${orderIndex}`
+  const existingSlot = Object.fromEntries(
+    existingProgramExercises.map((p) => [slotKey(p.program_day_id, p.order_index), p]),
+  )
+
+  const programExerciseRows = PROGRAM_EXERCISES.map((pe) => {
+    const program_day_id = dayIdByCode[pe.day_code]
+    const prev = existingSlot[slotKey(program_day_id, pe.order_index)]
+    return {
+      id: prev?.id ?? newId(),
+      user_id: userId,
+      program_day_id,
+      exercise_id: exerciseIdByName[pe.exercise_name],
+      order_index: pe.order_index,
+      target_sets: pe.target_sets,
+      rep_min: pe.rep_min,
+      rep_max: pe.rep_max,
+      target_rir_min: pe.target_rir_min ?? null,
+      target_rir_max: pe.target_rir_max ?? null,
+      rest_seconds: pe.rest_seconds ?? 90,
+      is_strength_lift: pe.is_strength_lift ?? false,
+      notes: pe.notes ?? null,
+      created_at: prev?.created_at ?? now,
+      updated_at: now,
+      deleted_at: null,
+    }
+  })
+
+  // Slots the program no longer has (a day got shorter). Soft-deleted, not
+  // hard-deleted, so the removal is something sync can actually push.
+  const keptIds = new Set(programExerciseRows.map((r) => r.id))
+  const retiredRows = existingProgramExercises
+    .filter((p) => !keptIds.has(p.id) && !p.deleted_at)
+    .map((p) => ({ ...p, deleted_at: now, updated_at: now }))
 
   const outboxFor = (table, rows) => rows.map((r) => ({ table_name: table, op: 'upsert', row_id: r.id, created_at: now, attempts: 0 }))
 
-  await db.transaction('rw', db.exercises, db.program_days, db.program_exercises, db.meal_presets, db.meta, db.outbox, async () => {
-    await db.exercises.bulkPut(exerciseRows)
-    await db.program_days.bulkPut(dayRows)
-    await db.meal_presets.bulkPut(mealRows)
+  await db.transaction(
+    'rw',
+    db.exercises, db.program_days, db.program_exercises, db.meal_presets,
+    db.sets, db.workout_exercises, db.meta, db.outbox,
+    async () => {
+      await db.exercises.bulkPut(exerciseRows)
+      await db.program_days.bulkPut(dayRows)
+      await db.meal_presets.bulkPut(mealRows)
+      // Updated in place now, so ids survive and nothing referencing them breaks.
+      await db.program_exercises.bulkPut([...programExerciseRows, ...retiredRows])
 
-    // program_exercises is pure configuration and is the one table safe to
-    // replace outright: sets reference exercise_id directly (01-schema.sql:72
-    // is explicit about this), and their nullable program_exercise_id is only
-    // a convenience link. Rebuilding it is how a changed program takes effect.
-    const stale = await db.program_exercises.toArray()
-    await db.program_exercises.bulkDelete(stale.map((p) => p.id))
-    await db.program_exercises.bulkAdd(programExerciseRows)
+      // Repair anything already orphaned by the earlier delete-and-recreate.
+      // Both columns are nullable by design (01-schema.sql uses ON DELETE SET
+      // NULL for sets) — the link is a convenience, and a dangling id is
+      // strictly worse than none, because Postgres refuses to store it.
+      const liveIds = new Set(programExerciseRows.map((r) => r.id))
+      const orphanedSets = await db.sets.filter(
+        (s) => s.program_exercise_id && !liveIds.has(s.program_exercise_id),
+      ).toArray()
+      const orphanedSlots = await db.workout_exercises.filter(
+        (w) => w.program_exercise_id && !liveIds.has(w.program_exercise_id),
+      ).toArray()
 
-    await db.meta.put({ key: 'seed_version', value: SEED_VERSION })
-    await db.outbox.bulkAdd([
-      ...outboxFor('exercises', exerciseRows),
-      ...outboxFor('program_days', dayRows),
-      ...outboxFor('program_exercises', programExerciseRows),
-      ...outboxFor('meal_presets', mealRows),
-    ])
-  })
+      const repairedSets = orphanedSets.map((s) => ({ ...s, program_exercise_id: null, updated_at: now }))
+      const repairedSlots = orphanedSlots.map((w) => ({ ...w, program_exercise_id: null, updated_at: now }))
+      if (repairedSets.length) await db.sets.bulkPut(repairedSets)
+      if (repairedSlots.length) await db.workout_exercises.bulkPut(repairedSlots)
+
+      await db.meta.put({ key: 'seed_version', value: SEED_VERSION })
+      await db.outbox.bulkAdd([
+        ...outboxFor('exercises', exerciseRows),
+        ...outboxFor('program_days', dayRows),
+        ...outboxFor('program_exercises', [...programExerciseRows, ...retiredRows]),
+        ...outboxFor('meal_presets', mealRows),
+        ...outboxFor('sets', repairedSets),
+        ...outboxFor('workout_exercises', repairedSlots),
+      ])
+    },
+  )
 }
