@@ -9,6 +9,7 @@ import LoginScreen from '../features/auth/LoginScreen'
 // there is a chunk you don't get (build-plan §0 rule 2: the app must fully
 // function with airplane mode on).
 import TodayScreen from '../features/workout/TodayScreen'
+import DayPreview from '../features/workout/DayPreview'
 import ActiveWorkout from '../features/workout/ActiveWorkout'
 
 // Everything else is split out. These screens are read at a desk or on the
@@ -66,6 +67,10 @@ export default function AppRouter() {
     <Routes>
       <Route path="/login" element={<RedirectIfAuthed><LoginScreen /></RedirectIfAuthed>} />
       <Route path="/" element={<RequireAuth><WithTabBar><TodayScreen /></WithTabBar></RequireAuth>} />
+      {/* Preview keeps the tab bar — it's a browsing screen. ActiveWorkout
+          deliberately opts out: the logging path stays distraction-free
+          (build-plan §0 rule 3). */}
+      <Route path="/day/:dayId" element={<RequireAuth><WithTabBar><DayPreview /></WithTabBar></RequireAuth>} />
       <Route path="/workout/:workoutId" element={<RequireAuth><ActiveWorkout /></RequireAuth>} />
       <Route path="/settings" element={<RequireAuth><WithTabBar><SettingsScreen /></WithTabBar></RequireAuth>} />
       <Route path="/history" element={<RequireAuth><WithTabBar><HistoryList /></WithTabBar></RequireAuth>} />

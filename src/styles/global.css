@@ -21,26 +21,24 @@ body {
 /* ---- Type ----------------------------------------------------------------
    apple-design §15: tracking is size-specific, never one value for all sizes.
    Big readouts get negative tracking and tight leading; micro labels get
-   wide positive tracking. That contrast is most of what makes this read as
-   an instrument rather than a generic app. */
+   wide positive tracking. That contrast carries most of the hierarchy. */
 
 .readout {
   font-family: var(--font-display);
   font-weight: 700;
   font-variant-numeric: tabular-nums; /* digits never jitter as they change */
   letter-spacing: -0.01em;
-  line-height: 0.92;
+  line-height: 0.95;
 }
 .readout-xl  { font-size: var(--fs-3xl); letter-spacing: -0.025em; }
 .readout-lg  { font-size: var(--fs-xl);  letter-spacing: -0.02em; }
 .readout-md  { font-size: var(--fs-lg);  letter-spacing: -0.015em; }
 
-/* The micro-label. Uppercase, wide-tracked, faint — the engraved text on a
-   machine panel. Every section and field in the app is titled with this. */
+/* The micro-label: the ruled heading on a printed form. */
 .label {
   font-size: var(--fs-2xs);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
   line-height: 1;
@@ -58,6 +56,7 @@ body {
 .faint { color: var(--text-faint); }
 
 h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0; }
 
 button {
   font-family: inherit;
@@ -77,7 +76,7 @@ button {
               opacity var(--dur-fast) var(--ease-standard),
               background-color var(--dur-fast) var(--ease-standard);
 }
-.pressable:active { transform: scale(0.985); opacity: 0.7; }
+.pressable:active { transform: scale(0.985); opacity: 0.75; }
 
 /* build-plan §6e explicitly forbids removing focus outlines. */
 :focus-visible {
@@ -86,50 +85,49 @@ button {
   border-radius: var(--radius-sm);
 }
 
-/* ---- Layout --------------------------------------------------------------
-   Utilities so screens stop carrying one-off inline styles. */
+/* ---- Layout --------------------------------------------------------------- */
 .container { max-width: 480px; margin: 0 auto; padding: 0 var(--space-5); }
-.screen    { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); }
+.screen    { padding-top: calc(var(--space-6) + env(safe-area-inset-top)); padding-bottom: var(--space-8); }
 .stack-1 { display: flex; flex-direction: column; gap: var(--space-1); }
 .stack-2 { display: flex; flex-direction: column; gap: var(--space-2); }
 .stack-3 { display: flex; flex-direction: column; gap: var(--space-3); }
 .stack-5 { display: flex; flex-direction: column; gap: var(--space-5); }
 .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 
-/* A "panel" is the instrument-panel replacement for the shadowed card:
-   a flat plane separated by a hairline, not a floating rounded rectangle. */
+/* A panel is a sheet of paper on the page: white, hairline-edged, softly
+   lifted. On the dark build this had to be a flat plane — light lets it
+   actually sit above the background. */
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
 }
-.panel-flush { border-left: 0; border-right: 0; border-radius: 0; }
 
-/* Hairline list: rows divided by rules, no gaps, no individual card chrome.
-   This is what makes dense data read as a readout instead of a feed. */
+/* Hairline list: rows divided by rules, no gaps, no per-row chrome. */
 .rule-list > * + * { border-top: 1px solid var(--line); }
-
 .divider { height: 1px; background: var(--line); border: 0; margin: 0; }
 
 textarea, select, input {
   font-family: inherit;
   font-size: var(--fs-sm);
   color: var(--text);
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   padding: var(--space-3);
   resize: none;
+  width: 100%;
 }
+input[type="datetime-local"] { min-height: var(--tap); }
 textarea:focus-visible, select:focus-visible, input:focus-visible {
-  outline: 1px solid var(--signal);
+  outline: 2px solid var(--signal);
   outline-offset: -1px;
   border-color: var(--signal);
 }
 
 /* ---- Accessibility -------------------------------------------------------
-   apple-design §14: three independent signals, handled separately. Reduced
-   motion is not the same request as reduced transparency. */
+   apple-design §14: three independent signals, handled separately. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -140,5 +138,5 @@ textarea:focus-visible, select:focus-visible, input:focus-visible {
   .glass { background: var(--surface) !important; backdrop-filter: none !important; }
 }
 @media (prefers-contrast: more) {
-  :root { --line: #4A4A52; --text-muted: #B8B8BE; --text-faint: #8E8E93; }
+  :root { --line: #A9A091; --text-muted: #4A453D; --text-faint: #6A645A; }
 }

@@ -6,7 +6,7 @@ import { db, newId, upsertRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
 import { movingAverage, weightTrend } from '../../lib/calc'
 import { todayLocalDate } from '../../lib/format'
-import Stepper from '../../components/Stepper'
+import StepperRow from '../../components/StepperRow'
 import Button from '../../components/Button'
 import Field from '../../components/Field'
 import Toast from '../../components/Toast'
@@ -109,7 +109,7 @@ export default function BodyScreen() {
 
       <div className="panel" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-4)' }}>
         <p className="label" style={{ marginBottom: 'var(--space-4)' }}>Today's weigh-in</p>
-        <Stepper value={weight} onChange={setWeight} step={0.1} longPressStep={0.5} min={0} format={(v) => `${v.toFixed(1)} kg`} />
+        <StepperRow label="Bodyweight" hint="first thing in the morning" value={weight} onChange={setWeight} step={0.1} longPressStep={0.5} min={0} format={(v) => `${v.toFixed(1)} kg`} />
         <Button className="btn-block" style={{ marginTop: 'var(--space-4)' }} onClick={logWeight}>
           {todayLog ? 'Update weight' : 'Log weight'}
         </Button>

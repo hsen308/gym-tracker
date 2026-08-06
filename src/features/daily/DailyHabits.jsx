@@ -10,7 +10,7 @@ import { db, newId, upsertRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
 import { todayLocalDate } from '../../lib/format'
 import { DAILY_TARGETS } from '../../lib/constants'
-import Stepper from '../../components/Stepper'
+import StepperRow from '../../components/StepperRow'
 
 export default function DailyHabits() {
   const { user } = useAuth()
@@ -40,20 +40,20 @@ export default function DailyHabits() {
 
   return (
     <div className="panel" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-      <Stepper
-        label={`Steps · target ${DAILY_TARGETS.steps.toLocaleString()}`}
+      <StepperRow
+        label="Steps" hint={`target ${DAILY_TARGETS.steps.toLocaleString()}`}
         value={log?.steps ?? 0} step={500} longPressStep={2000} min={0} max={60000}
         format={(v) => v.toLocaleString()}
         onChange={(steps) => patch({ steps })}
       />
-      <Stepper
-        label="Cardio · minutes"
+      <StepperRow
+        label="Cardio" hint="low-intensity minutes"
         value={log?.cardio_minutes ?? 0} step={5} longPressStep={10} min={0} max={180}
         format={(v) => `${v} min`}
         onChange={(cardio_minutes) => patch({ cardio_minutes })}
       />
-      <Stepper
-        label={`Water · target ${DAILY_TARGETS.water_litres} L`}
+      <StepperRow
+        label="Water" hint={`target ${DAILY_TARGETS.water_litres} L`}
         value={log?.water_litres ?? 0} step={0.25} longPressStep={0.5} min={0} max={8}
         format={(v) => `${v} L`}
         onChange={(water_litres) => patch({ water_litres })}

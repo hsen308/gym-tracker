@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../../db/dexie'
+import { db, softDeleteRow } from '../../db/dexie'
+import Sheet from '../../components/Sheet'
 import { downloadExport, importAll, readFileAsJson } from '../../db/export'
 import { useAuth } from '../../app/AuthProvider'
 import { useSync } from '../../app/SyncProvider'
@@ -14,6 +15,25 @@ export default function SettingsScreen() {
   const fileInput = useRef(null)
   const [toast, setToast] = useState('')
   const [busy, setBusy] = useState(false)
+  const [resetOpen, setResetOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+
+  // Soft-delete rather than a hard wipe: rows keep their id with deleted_at
+  // set, so the deletion itself has something to push. Hard-deleting locally
+  // would leave the cloud copy alive and sync would pull it straight back.
+  const doReset = async () => {
+    const now = new Date().toISOString()
+    for (const table of ['sets', 'workouts', 'workout_exercises']) {
+      const rows = await db[table].filter((r) => !r.deleted_at).toArray()
+      for (const row of rows) await softDeleteRow(table, row.id)
+    }
+    // The program start date is derived from the earliest workout; with none
+    // left it must be re-derived, or week counting stays stuck on the old one.
+    await db.meta.delete('program_started_at')
+    setResetOpen(false)
+    setConfirmText('')
+    setToast('All logged sessions cleared.')
+  }
 
   const syncErrors = useLiveQuery(() => db.sync_errors.orderBy('failed_at').reverse().toArray(), []) ?? []
   const counts = useLiveQuery(async () => ({
@@ -108,10 +128,43 @@ export default function SettingsScreen() {
         </section>
 
         <section className="panel set-block">
+          <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Training data</p>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.55 }}>
+            Deletes every logged session, set and pain reading. Your program, exercise library and
+            meals stay. Export first if there's anything worth keeping — this can't be undone.
+          </p>
+          <Button variant="danger" className="btn-block" onClick={() => setResetOpen(true)}>
+            Clear all logged sessions
+          </Button>
+        </section>
+
+        <section className="panel set-block">
           <p className="label" style={{ marginBottom: 'var(--space-4)' }}>Account</p>
-          <Button variant="danger" className="btn-block" onClick={signOut}>Sign out</Button>
+          <Button variant="secondary" className="btn-block" onClick={signOut}>Sign out</Button>
         </section>
       </div>
+
+      {/* Typed confirmation, not a yes/no. This wipes training history that
+          sync will then wipe on every other device too — worth making
+          deliberate rather than one mis-tap away. */}
+      <Sheet open={resetOpen} onClose={() => setResetOpen(false)}>
+        <h2 className="sheet-title">Clear all logged sessions?</h2>
+        <p className="sheet-sub">
+          Every session, set, warm-up and pain reading is deleted from this device and from the
+          cloud on next sync. Your program and exercise library are untouched.
+        </p>
+        <label className="field">
+          <span className="label">Type CLEAR to confirm</span>
+          <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoCapitalize="characters" />
+        </label>
+        <Button
+          variant="danger" className="btn-block" style={{ marginTop: 'var(--space-5)' }}
+          disabled={confirmText.trim().toUpperCase() !== 'CLEAR'}
+          onClick={doReset}
+        >
+          Delete everything logged
+        </Button>
+      </Sheet>
 
       <Toast message={toast} onDismiss={() => setToast('')} />
     </div>

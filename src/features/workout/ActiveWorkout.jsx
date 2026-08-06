@@ -15,6 +15,8 @@ import ExercisePanel from './ExercisePanel'
 import RestTimer from './RestTimer'
 import FinishSheet from './FinishSheet'
 import SwapSheet from './SwapSheet'
+import SessionTimeSheet from './SessionTimeSheet'
+import { ExerciseCues } from './DayPreview'
 
 // The core screen (build-plan §7 Phase 1 item 5). Every write below goes
 // straight to Dexie and returns — nothing here awaits a network call (§0
@@ -52,6 +54,7 @@ export default function ActiveWorkout() {
   const [cueSlotId, setCueSlotId] = useState(null)
   const [swapSlotId, setSwapSlotId] = useState(null)
   const [finishOpen, setFinishOpen] = useState(false)
+  const [timeOpen, setTimeOpen] = useState(false)
 
   const elapsed = useElapsedSeconds(workout?.started_at)
   const programStart = useProgramStart()
@@ -156,11 +159,25 @@ export default function ActiveWorkout() {
   // so the deletion itself has something to push. A hard local delete would
   // erase the row before sync ever saw it.
   const removeSet = (setId) => softDeleteRow('sets', setId)
+
+  // Editing a logged set, not just deleting it — entering a session after the
+  // fact makes typos routine, and re-entering a whole set to fix one digit is
+  // the kind of friction that stops people logging at all.
+  const updateSet = (setId, patch) =>
+    updateRow('sets', setId, {
+      weight_kg: patch.weight_kg ?? null,
+      reps: patch.reps ?? null,
+      rir: patch.rir ?? null,
+      duration_seconds: patch.duration_seconds ?? null,
+      updated_at: new Date().toISOString(),
+    })
   const clearRest = () => db.active_rest.delete(workoutId)
 
-  const finishWorkout = async (extra) => {
+  // `finished_at` comes from the sheet so a session logged after the fact can
+  // record when it actually ended, not when you got round to typing it up.
+  const finishWorkout = async ({ finishedAt, ...extra }) => {
     const now = new Date().toISOString()
-    await updateRow('workouts', workoutId, { ...extra, finished_at: now, updated_at: now })
+    await updateRow('workouts', workoutId, { ...extra, finished_at: finishedAt ?? now, updated_at: now })
     await db.active_rest.delete(workoutId)
     navigate('/')
   }
@@ -178,7 +195,12 @@ export default function ActiveWorkout() {
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>{day?.name ?? '…'}</p>
-          <p className="workout-clock">{formatDuration(elapsed)} · {workingDone}/{totalTarget} sets</p>
+          {/* The clock is a button: if you started the session late, or are
+              typing it up hours afterwards, this is where you correct it. */}
+          <button className="workout-clock pressable" onClick={() => setTimeOpen(true)}>
+            {formatDuration(elapsed)} · {workingDone}/{totalTarget} sets
+            <Icon name="timer" size={12} />
+          </button>
         </div>
         <OfflineBadge />
       </header>
@@ -219,6 +241,7 @@ export default function ActiveWorkout() {
                 onOpenCues={() => setCueSlotId(pe.id)}
                 onOpenSwap={() => setSwapSlotId(pe.id)}
                 onConfirmSet={(draft) => confirmSet(pe, exercise, draft)}
+                onUpdateSet={updateSet}
                 onRemoveSet={removeSet}
               />
             )
@@ -238,37 +261,10 @@ export default function ActiveWorkout() {
         />
       )}
 
+      {/* Same cue sheet the day preview shows — one component, so the
+          reference you read before the gym is the one you get mid-set. */}
       <Sheet open={!!cueExercise} onClose={() => setCueSlotId(null)}>
-        {cueExercise && (
-          <>
-            <h2 className="sheet-title">{cueExercise.name}</h2>
-            {/* The SI note leads, per build-plan §7: the sheet exists to put
-                the caution in front of you at the moment it matters — mid-set,
-                deciding whether to add load. */}
-            {cueExercise.si_risk === 'caution' && (
-              <div className="panel" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-                <p className="label" style={{ marginBottom: 6 }}>SI joint caution</p>
-                <p style={{ fontSize: 14, lineHeight: 1.5 }}>
-                  Stop before the hips tuck, stay symmetrical, never twist to grind a rep. If it aches, cut the range and drop 20%.
-                </p>
-              </div>
-            )}
-            {cueExercise.setup_notes && (
-              <>
-                <p className="label" style={{ marginBottom: 6 }}>Setup</p>
-                <p style={{ fontSize: 14, lineHeight: 1.55, marginBottom: 'var(--space-5)' }}>{cueExercise.setup_notes}</p>
-              </>
-            )}
-            {cueExercise.cues?.length > 0 && (
-              <>
-                <p className="label" style={{ marginBottom: 8 }}>Cues</p>
-                <ul className="stack-3" style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.5 }}>
-                  {cueExercise.cues.map((c, i) => <li key={i}>{c}</li>)}
-                </ul>
-              </>
-            )}
-          </>
-        )}
+        {cueExercise && <ExerciseCues exercise={cueExercise} />}
       </Sheet>
 
       <SwapSheet
@@ -280,7 +276,19 @@ export default function ActiveWorkout() {
         onSwap={(alt) => { patchSlot(swapSlotId, { swapped_exercise_id: alt.id }); setSwapSlotId(null) }}
       />
 
-      <FinishSheet open={finishOpen} onClose={() => setFinishOpen(false)} onFinish={finishWorkout} />
+      <SessionTimeSheet
+        open={timeOpen}
+        onClose={() => setTimeOpen(false)}
+        workout={workout}
+        onSave={(patch) => updateRow('workouts', workoutId, { ...patch, updated_at: new Date().toISOString() })}
+      />
+
+      <FinishSheet
+        open={finishOpen}
+        onClose={() => setFinishOpen(false)}
+        startedAt={workout.started_at}
+        onFinish={finishWorkout}
+      />
     </div>
   )
 }

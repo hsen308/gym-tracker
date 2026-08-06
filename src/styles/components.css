@@ -1,53 +1,69 @@
 /* Component styles. Plain CSS, no framework — build-plan §1. */
 
-/* ---- Buttons -------------------------------------------------------------
-   Primary is an INVERTED plane (white on black). In a monochrome system
-   inversion is what a colour accent would otherwise do — which is exactly
-   why it's rationed to one primary action per screen. */
+/* ---- Buttons -------------------------------------------------------------- */
 .btn {
   border-radius: var(--radius);
   padding: 0 var(--space-5);
   min-height: var(--tap);
   font-weight: 600;
   font-size: var(--fs-sm);
-  letter-spacing: 0.01em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
 }
-.btn-primary   { background: var(--signal); color: var(--on-signal); }
-.btn-secondary { background: var(--surface-alt); color: var(--text); border: 1px solid var(--line); }
-.btn-secondary:active { background: var(--surface-high); }
-.btn-ghost     { background: transparent; color: var(--text-muted); padding: 0 var(--space-3); }
-/* Destructive is an outline, never a fill — it should not out-shout the
-   primary action, and there's no red to lean on. */
-.btn-danger    { background: transparent; color: var(--text); border: 1px solid var(--danger-line); }
-.btn:disabled  { opacity: 0.35; }
+.btn-primary   { background: var(--signal); color: var(--on-signal); box-shadow: var(--shadow-card); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
+.btn-secondary:active { background: var(--surface-alt); }
+.btn-ghost     { background: transparent; color: var(--text-muted); padding: 0 var(--space-3); min-height: 40px; }
+.btn-danger    { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); }
+.btn:disabled  { opacity: 0.4; }
 .btn-block     { width: 100%; }
 .btn-icon      { min-width: var(--tap); padding: 0; }
 
-/* ---- Stepper -------------------------------------------------------------
-   The primary input on the logging path. No keyboard, ever (build-plan §9). */
-.stepper-wrap { flex: 1; min-width: 0; }
-.stepper {
+/* A quiet inline action — used where a full button would shout. */
+.link-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--signal);
+}
+
+/* ---- Stepper row ---------------------------------------------------------
+   The primary input on the logging path. Label and meaning on top, big
+   −/value/+ underneath. No keyboard, ever (build-plan §9). */
+.steprow { display: flex; flex-direction: column; gap: 6px; }
+.steprow-meta { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.steprow-label { font-size: var(--fs-xs); font-weight: 600; }
+.steprow-hint { font-size: var(--fs-2xs); color: var(--text-muted); text-align: right; }
+/* A tappable hint is an explanation, not decoration — "per dumbbell" and
+   "reps left" both open a sheet that says what the number means. */
+.steprow-hint.is-tappable {
+  display: inline-flex; align-items: center; gap: 3px;
+  color: var(--signal); font-weight: 500;
+  min-height: 28px;
+}
+.steprow-control {
   display: flex;
   align-items: stretch;
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   height: var(--tap);
   overflow: hidden;
 }
-.stepper-btn {
-  width: 46px;
+.steprow-btn {
+  width: 64px;
   flex: none;
   display: grid;
   place-items: center;
-  color: var(--text-muted);
+  color: var(--text);
+  background: var(--surface-alt);
 }
-.stepper-btn:active { background: var(--surface-high); color: var(--text); }
-.stepper-value {
+.steprow-btn:active { background: var(--surface-high); }
+.steprow-value {
   flex: 1;
   min-width: 0;
   display: grid;
@@ -55,45 +71,58 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: var(--fs-md);
-  font-weight: 500;
+  font-weight: 600;
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
 }
 
-/* ---- Sheet ---------------------------------------------------------------
-   Dismiss by swipe, never a precise close tap (§6e). Translucency is the one
-   place the app uses a material — content genuinely passes underneath it. */
-.sheet-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.66); z-index: 40; }
-/* Insurance, not decoration: a scrim that is fully transparent must never be
-   able to swallow taps. If it is ever left mounted mid-fade by a bug, the app
-   underneath stays usable instead of going silently dead. */
+/* ---- Set editor ----------------------------------------------------------- */
+.set-editor { display: flex; flex-direction: column; gap: var(--space-4); }
+.set-editor-actions { display: flex; gap: var(--space-2); margin-top: var(--space-1); }
+.next-set {
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin: var(--space-3) 0 var(--space-2);
+}
+.next-set-head {
+  font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* ---- Sheet ---------------------------------------------------------------- */
+.sheet-scrim { position: fixed; inset: 0; background: rgba(26,24,21,0.4); z-index: 40; }
+/* Insurance: a fully transparent scrim must never swallow taps. */
 .sheet-scrim[style*="opacity: 0"] { pointer-events: none; }
 .sheet {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 41;
-  background: rgba(11, 11, 12, 0.86);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border-top: 1px solid var(--line-strong);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: var(--shadow-sheet);
   padding: var(--space-2) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
-  max-height: 86vh;
+  max-height: 88vh;
   overflow-y: auto;
-  touch-action: none; /* the drag gesture owns vertical touch, not page scroll */
+  touch-action: none;
 }
 .sheet-handle {
-  width: 32px; height: 3px;
+  width: 36px; height: 4px;
   border-radius: 2px;
   background: var(--line-strong);
   margin: var(--space-2) auto var(--space-5);
 }
-.sheet-title { font-size: var(--fs-md); margin-bottom: var(--space-4); }
+.sheet-title { font-size: var(--fs-md); margin-bottom: var(--space-2); }
+.sheet-sub { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.55; margin-bottom: var(--space-5); }
 
 /* ---- Field ---------------------------------------------------------------- */
 .field { display: flex; flex-direction: column; gap: var(--space-2); }
-.field input { height: var(--tap); padding: 0 var(--space-4); }
+.field input:not([type="datetime-local"]) { height: var(--tap); padding: 0 var(--space-4); }
+.field-hint { font-size: var(--fs-2xs); color: var(--text-muted); }
+.form-error { font-size: var(--fs-xs); color: var(--danger); margin-top: var(--space-3); }
 
 /* ---- Toast ---------------------------------------------------------------- */
 .toast {
@@ -103,25 +132,25 @@
   z-index: 50;
   max-width: 440px;
   margin: 0 auto;
-  background: var(--signal);
-  color: var(--on-signal);
+  background: var(--text);
+  color: var(--bg);
   border-radius: var(--radius);
   padding: var(--space-4);
   font-size: var(--fs-xs);
   font-weight: 500;
+  box-shadow: var(--shadow-raise);
 }
 
-/* ---- Sync badge ----------------------------------------------------------
-   State without colour: solid square = synced, hollow = pending, half = syncing. */
+/* ---- Sync badge ----------------------------------------------------------- */
 .syncbadge { display: inline-flex; align-items: center; gap: var(--space-2); }
-.syncbadge-mark { width: 7px; height: 7px; border: 1px solid var(--text-muted); }
-.syncbadge.is-online  .syncbadge-mark { background: var(--text-muted); }
-.syncbadge.is-syncing .syncbadge-mark { background: linear-gradient(90deg, var(--text) 50%, transparent 50%); border-color: var(--text); }
+.syncbadge-mark { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--text-faint); }
+.syncbadge.is-online  .syncbadge-mark { background: var(--pr); border-color: var(--pr); }
+.syncbadge.is-syncing .syncbadge-mark { background: var(--signal); border-color: var(--signal); }
 .syncbadge.is-offline .syncbadge-mark { background: transparent; }
 
 /* ---- Glass chrome --------------------------------------------------------- */
 .glass {
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(245, 243, 238, 0.86);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
 }
@@ -134,6 +163,9 @@
   display: flex;
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(245, 243, 238, 0.9);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
 }
 .tabbar-item {
   flex: 1;
@@ -146,29 +178,29 @@
   color: var(--text-faint);
   text-decoration: none;
 }
-.tabbar-item.is-active { color: var(--text); }
-.tabbar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-.with-tabbar { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+.tabbar-item.is-active { color: var(--signal); }
+.tabbar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.with-tab-bar { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 
 /* ---- Login ---------------------------------------------------------------- */
 .login-shell { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: var(--space-6); max-width: 400px; margin: 0 auto; }
 .login-mark { margin-bottom: var(--space-7); }
-.login-title { font-size: 34px; letter-spacing: -0.03em; line-height: 1; margin-bottom: var(--space-2); }
+.login-title { font-size: 40px; letter-spacing: -0.03em; line-height: 0.95; margin-bottom: var(--space-2); }
 .login-form { margin-top: var(--space-7); display: flex; flex-direction: column; gap: var(--space-4); }
 .login-note { font-size: var(--fs-xs); line-height: 1.6; color: var(--text-muted); margin-top: var(--space-6); }
 .login-note code { font-family: var(--font-mono); color: var(--text); font-size: 12px; }
 
-/* ---- Screen headers ------------------------------------------------------
-   Editorial, not centred: a wide-tracked micro label above a large condensed
-   title, hard-left. Same construction on every screen. */
-.screen-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-6); }
-.screen-title { font-size: 30px; letter-spacing: -0.025em; line-height: 1; margin-top: 6px; }
+/* ---- Screen headers ------------------------------------------------------- */
+.screen-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-5); }
+.screen-title { font-size: 32px; letter-spacing: -0.025em; line-height: 1; margin-top: 6px; }
 .section-label { margin: var(--space-7) 0 var(--space-3); }
+.has-sticky-action { padding-bottom: 150px; }
 
 /* ---- Today ---------------------------------------------------------------- */
-.next-card { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); }
-.next-day-name { font-size: 46px; letter-spacing: -0.03em; line-height: 0.9; }
-.next-meta { display: flex; gap: var(--space-5); }
+.next-card { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+.next-day-name { font-size: 44px; letter-spacing: -0.03em; line-height: 0.92; margin-top: 6px; }
+.next-focus { font-size: var(--fs-xs); color: var(--text-muted); margin-top: var(--space-2); }
+
 .day-row {
   width: 100%;
   display: flex;
@@ -179,9 +211,60 @@
   text-align: left;
   color: var(--text);
 }
-.day-row:active { background: var(--surface); }
+.day-row:active { background: var(--surface-alt); }
 .day-row-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 18px; flex: none; }
-.day-row-name { flex: 1; font-weight: 500; }
+.day-row-main { flex: 1; min-width: 0; }
+.day-row-name { display: block; font-weight: 600; }
+.day-row-focus { display: block; font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 2px; }
+
+/* ---- Day preview ---------------------------------------------------------- */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.stat-strip > div { padding: var(--space-4); border-right: 1px solid var(--line); }
+.stat-strip > div:last-child { border-right: 0; }
+.stat-strip-value {
+  font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700;
+  letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums;
+}
+.stat-unit { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+
+.preview-row {
+  width: 100%; display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-4); text-align: left; color: var(--text);
+}
+.preview-row:active { background: var(--surface-alt); }
+.preview-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 20px; flex: none; padding-top: 3px; }
+.preview-main { flex: 1; min-width: 0; }
+.preview-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-weight: 500; }
+.preview-target { display: block; font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+
+/* Sticky so Start is reachable without scrolling back up a long session. */
+.sticky-action {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 15;
+  max-width: 480px; margin: 0 auto;
+  padding: var(--space-4) var(--space-5);
+  background: rgba(245, 243, 238, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+}
+
+/* ---- Tags ----------------------------------------------------------------- */
+.tag {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 3px 6px; border-radius: 3px; flex: none;
+  text-transform: uppercase;
+}
+.tag-strength { background: var(--signal-soft); color: var(--signal); }
+.tag-caution  { background: var(--warn-soft); color: var(--warn); }
+.tag-swap     { background: var(--surface-high); color: var(--text-muted); }
 
 /* ---- Active workout ------------------------------------------------------- */
 .workout-shell { max-width: 480px; margin: 0 auto; padding-bottom: 96px; }
@@ -193,125 +276,186 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   padding-top: calc(var(--space-3) + env(safe-area-inset-top));
   border-bottom: 1px solid var(--line);
 }
-.workout-clock { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
-.workout-body { padding: 0 var(--space-5); }
+.workout-clock {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  color: var(--signal); margin-top: 2px;
+}
+.workout-body { padding: 0 var(--space-5) var(--space-6); }
 
-/* Exercise row: hanging monospace index, name, then a sets counter. The
-   index column is what makes a long list scannable one-handed mid-set. */
 .ex-row {
   width: 100%;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-height: var(--tap);
-  padding: var(--space-3) 0;
+  padding: var(--space-4) 0;
   text-align: left;
   color: var(--text-muted);
 }
 .ex-row-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 20px; flex: none; }
-.ex-row-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-2); }
+.ex-row-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ex-row.is-open { color: var(--text); }
 .ex-row.is-open .ex-row-name { font-weight: 600; }
-.ex-row-count { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-faint); }
-.ex-row-count.is-done { color: var(--text); }
-.ex-panel { padding-bottom: var(--space-4); }
-.ex-target { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); padding: 0 0 var(--space-3) 32px; }
+.ex-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ex-row-count {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-faint);
+}
+.ex-row-count.is-done { color: var(--pr); font-weight: 600; }
+.ex-panel { padding-bottom: var(--space-5); }
+.ex-target { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); padding-left: 32px; }
+.ex-note { font-size: var(--fs-2xs); color: var(--text-faint); padding-left: 32px; margin-top: 3px; line-height: 1.45; }
+.ex-history { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); padding: var(--space-2) 0 0 32px; }
 
-/* Hollow ring + label, never a coloured dot. */
-.si-mark {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+.ex-actions { display: flex; gap: var(--space-2); padding: var(--space-3) 0 0 32px; flex-wrap: wrap; }
+.ex-action {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500;
   color: var(--text-muted);
-  border: 1px solid var(--line-strong);
-  border-radius: 2px;
-  padding: 1px 4px;
-  flex: none;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  min-height: 36px;
 }
+.ex-action:active { background: var(--surface-high); color: var(--text); }
 
-.strength-tag {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
-  color: var(--on-signal); background: var(--signal);
-  padding: 2px 5px; border-radius: 2px; flex: none;
-}
+.set-list { margin: var(--space-3) 0 0; padding-left: 32px; }
+.set-list > * + * { border-top: 1px solid var(--line); }
 
-/* ---- Set rows ------------------------------------------------------------- */
-.set-row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 0 var(--space-2) 32px; }
-.set-row-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 20px; flex: none; margin-left: -32px; padding-left: 12px; }
-.set-confirm { width: var(--tap); min-width: var(--tap); flex: none; }
-
-/* A logged set: dense monospace line, no input chrome. */
+/* A logged set: dense mono line, tappable to edit. */
 .set-done {
-  display: flex; align-items: center; gap: var(--space-4);
-  padding: var(--space-3) 0 var(--space-3) 32px;
+  width: 100%;
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
   font-family: var(--font-mono); font-size: var(--fs-sm);
+  text-align: left; color: var(--text);
 }
-.set-done-load { flex: 1; }
-.set-done-rir { color: var(--text-faint); font-size: var(--fs-xs); }
-/* PR: the only inverted element in the list. Unmissable without colour. */
+.set-done:active { background: var(--surface-alt); }
+.set-row-index { font-size: var(--fs-2xs); color: var(--text-faint); width: 20px; flex: none; }
+.set-done-load { flex: 1; font-weight: 500; }
+.set-done-rir { color: var(--text-muted); font-size: var(--fs-2xs); }
+.set-done.is-warmup { color: var(--text-faint); }
+.set-done.is-warmup .set-done-load { font-weight: 400; font-size: var(--fs-xs); }
+
 .pr-chip {
   font-family: var(--font-body);
-  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
-  background: var(--pr-bg); color: var(--pr-fg);
-  padding: 2px 5px; border-radius: 2px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  background: var(--pr-soft); color: var(--pr);
+  padding: 3px 6px; border-radius: 3px;
 }
-/* Hold-to-delete progress: the row fills from the left as you hold, so the
-   destructive action is visible before it commits (build-plan §9: destructive
-   actions need more than a tap). */
-.set-done.is-holding { background: linear-gradient(90deg, var(--surface-high) var(--hold, 0%), transparent var(--hold, 0%)); }
+
+.plate-hint {
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  color: var(--text-muted); margin-top: -6px;
+}
+
+/* ---- Progression advice --------------------------------------------------
+   The one place in the logging path that says what to DO rather than
+   recording what you did — so "add weight" gets the accent and the rest
+   stay quiet. */
+.advice {
+  margin: var(--space-3) 0 0 32px;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--line-strong);
+  background: var(--surface-alt);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.advice-add_weight { border-left-color: var(--signal); background: var(--signal-soft); }
+.advice-main { font-size: 13px; line-height: 1.45; }
+.advice-detail { font-size: 13px; line-height: 1.45; margin-top: 3px; color: var(--text-muted); }
+.advice-add_weight .advice-detail { color: var(--signal); font-weight: 600; }
+.advice-today {
+  font-size: 13px; line-height: 1.45; font-weight: 600;
+  margin-top: 6px; padding-top: 6px;
+  border-top: 1px solid var(--line-strong);
+}
+
+/* ---- Traffic-light pain --------------------------------------------------- */
+.pain-control { margin: var(--space-4) 0 0 32px; }
+.pain-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.pain-buttons { display: flex; gap: var(--space-2); }
+.pain-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  min-height: 38px;
+}
+.pain-btn .pain-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
+.pain-btn.is-green.is-active  { background: var(--pr-soft); color: var(--pr); border-color: var(--pr); }
+.pain-btn.is-yellow.is-active { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.pain-btn.is-red.is-active    { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+.pain-btn.is-active .pain-dot { background: currentColor; }
+.pain-hint { font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-top: var(--space-2); }
+
+/* ---- Phase banner --------------------------------------------------------- */
+.phase-banner {
+  background: var(--warn-soft);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+}
+.phase-note { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 6px; }
+.phase-banner .phase-note { color: var(--warn); }
+
+/* ---- Callouts ------------------------------------------------------------- */
+.callout { border-radius: var(--radius); padding: var(--space-4); margin-bottom: var(--space-4); }
+.callout p:last-child { font-size: 14px; line-height: 1.55; margin-top: 6px; }
+.callout-warn { background: var(--warn-soft); border: 1px solid var(--warn); color: var(--warn); }
+
+.cue-list { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.55; }
+.cue-list li + li { margin-top: var(--space-2); }
 
 /* ---- Rest timer ----------------------------------------------------------
-   The signature element (build-plan §6d). Bottom third, inverted, readable
-   from a rack ten metres away, no interaction required. The bar drains
-   right-to-left underneath a knocked-out numeral. */
+   The signature element (build-plan §6d). Bottom third, readable from a rack
+   ten metres away, no interaction required. */
 .rest {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   height: 34vh;
-  min-height: 210px;
+  min-height: 200px;
   z-index: 30;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--surface);
   border-top: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-sheet);
   padding-bottom: env(safe-area-inset-bottom);
   display: grid;
   place-items: center;
 }
-.rest-fill {
-  position: absolute;
-  inset: 0;
-  background: var(--surface-high);
-  transform-origin: left;
-}
+.rest-fill { position: absolute; inset: 0; background: var(--signal-soft); transform-origin: left; }
 .rest-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
-.rest-label { color: var(--text-faint); }
-.rest-time { color: var(--text); }
+.rest-time { color: var(--signal); }
 .rest.is-done .rest-fill { background: var(--signal); }
-.rest.is-done .rest-time, .rest.is-done .rest-label { color: var(--on-signal); }
-.rest.is-done .btn-ghost { color: var(--on-signal); opacity: 0.7; }
+.rest.is-done .rest-time { color: var(--on-signal); }
+.rest.is-done .rest-label { color: rgba(255,255,255,0.75); }
+.rest.is-done .btn-ghost { color: var(--on-signal); }
 
 /* ---- History -------------------------------------------------------------- */
-.hist-row {
-  width: 100%;
-  display: flex; align-items: center; gap: var(--space-4);
-  padding: var(--space-4) 0;
-  text-align: left; color: var(--text);
-}
+.hist-row { width: 100%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); text-align: left; color: var(--text); }
+.hist-row:active { background: var(--surface-alt); }
 .hist-date { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 52px; flex: none; line-height: 1.3; }
 .hist-main { flex: 1; min-width: 0; }
-.hist-name { font-weight: 500; }
-.hist-stats { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); margin-top: 3px; }
+.hist-name { font-weight: 600; }
+.hist-stats { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 3px; }
 
-.detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
 .detail-cell { padding: var(--space-4); border-right: 1px solid var(--line); }
 .detail-cell:last-child { border-right: 0; }
 .detail-value { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
 
-.ex-group { padding: var(--space-4) 0; }
+.ex-group { padding: var(--space-4); }
 .ex-group-head { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: var(--space-3); color: var(--text); }
 .ex-group-name { font-weight: 600; }
 
@@ -321,16 +465,16 @@
 /* ---- Meals ---------------------------------------------------------------- */
 .macro-block { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
 .macro-hero { display: flex; align-items: baseline; gap: var(--space-2); }
-.macro-hero-target { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-faint); }
-.macro-track { height: 2px; background: var(--surface-high); position: relative; }
-.macro-fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); transition: width var(--dur-med) var(--ease-standard); }
-/* Past target reads as a hatched overrun rather than "more of the same". */
-.macro-fill.is-over { background: repeating-linear-gradient(90deg, var(--signal) 0 3px, transparent 3px 6px); }
+.macro-hero-target { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
+.macro-track { height: 6px; background: var(--surface-high); border-radius: 3px; position: relative; overflow: hidden; }
+.macro-fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; transition: width var(--dur-med) var(--ease-standard); }
+.macro-fill.is-over { background: repeating-linear-gradient(90deg, var(--warn) 0 4px, var(--warn-soft) 4px 8px); }
 .macro-line { display: flex; flex-direction: column; gap: 6px; }
 
-.meal-row { width: 100%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) 0; text-align: left; color: var(--text); }
+.meal-row { width: 100%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); text-align: left; color: var(--text); }
+.meal-row:active { background: var(--surface-alt); }
 .meal-name { flex: 1; min-width: 0; font-size: var(--fs-xs); line-height: 1.4; }
-.meal-kcal { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); flex: none; }
+.meal-kcal { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); flex: none; }
 .meal-slot { display: flex; align-items: center; gap: var(--space-3); }
 
 /* ---- Insights ------------------------------------------------------------- */
@@ -339,11 +483,10 @@
 .vol-head { display: flex; justify-content: space-between; align-items: baseline; }
 .vol-muscle { font-size: var(--fs-xs); text-transform: capitalize; }
 .vol-count { font-family: var(--font-mono); font-size: var(--fs-2xs); }
-/* In-band = solid, out-of-band = hollow with a marker at the 10-set minimum. */
-.vol-track { height: 3px; background: var(--surface-high); position: relative; }
-.vol-fill { position: absolute; inset: 0 auto 0 0; background: var(--text-faint); }
-.vol-fill.in-band { background: var(--signal); }
-.vol-min { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--line-strong); }
+.vol-track { height: 6px; background: var(--surface-high); border-radius: 3px; position: relative; overflow: hidden; }
+.vol-fill { position: absolute; inset: 0 auto 0 0; background: var(--line-strong); border-radius: 3px; }
+.vol-fill.in-band { background: var(--pr); }
+.vol-min { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-faint); }
 
 .stat-line { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; width: 100%; text-align: left; color: var(--text); }
 
@@ -351,137 +494,31 @@
 .set-block { padding: var(--space-5); }
 .err-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) 0; }
 
-/* ---- Empty states --------------------------------------------------------
-   §6f: empty states invite action, they don't just report emptiness. */
-.empty { padding: var(--space-8) 0; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.6; }
-
-.error-dump {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: var(--space-4);
-  margin: 0;
-}
-
-/* ---- Progression advice --------------------------------------------------
-   The one place in the logging path that tells you what to DO rather than
-   recording what you did — so "add weight" is inverted (the same treatment
-   as the primary button) while "hold" and "add reps" stay quiet. */
-.advice {
-  margin: 0 0 var(--space-3) 32px;
-  padding: var(--space-3) var(--space-4);
-  border-left: 2px solid var(--line-strong);
-  background: var(--surface);
-}
-.advice-add_weight { border-left-color: var(--signal); background: var(--surface-alt); }
-.advice-main { font-size: 13px; line-height: 1.45; }
-.advice-detail { font-size: 13px; line-height: 1.45; margin-top: 3px; color: var(--text-muted); }
-.advice-add_weight .advice-detail { color: var(--text); font-weight: 600; }
-/* The reduced-week override outranks the progression target it sits under,
-   so it gets the weight and the rule above it goes quiet. */
-.advice-today {
-  font-size: 13px; line-height: 1.45; font-weight: 600;
-  margin-top: 6px; padding-top: 6px;
-  border-top: 1px solid var(--line);
-}
-
-.ex-history {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-faint);
-  padding: 0 0 var(--space-3) 32px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ex-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Secondary actions on an open exercise: quiet, evenly weighted, never
-   competing with the confirm button. */
-.ex-actions { display: flex; gap: var(--space-2); padding: 0 0 var(--space-3) 32px; flex-wrap: wrap; }
-.ex-action {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 500;
-  color: var(--text-muted);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 6px 9px;
-  min-height: 34px;
-}
-.ex-action:active { background: var(--surface-alt); color: var(--text); }
-
-.plate-hint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-faint);
-  padding: 0 0 var(--space-2) 52px;
-  margin-top: -4px;
-}
-
-/* Warm-up sets read as scaffolding, not as work — dimmer, and marked "W"
-   instead of a set number so the working-set count stays honest. */
-.set-done.is-warmup { color: var(--text-faint); }
-.set-done.is-warmup .set-done-load { font-size: var(--fs-xs); }
-
-/* ---- Traffic-light pain --------------------------------------------------
-   Levels differ by FILL, not hue: empty ring / half / solid. The word
-   carries the meaning; the mark is only a quick visual anchor. */
-.pain-control { margin: var(--space-3) 0 var(--space-2) 32px; }
-.pain-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
-.pain-buttons { display: flex; gap: var(--space-2); }
-.pain-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 500;
-  color: var(--text-faint);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  min-height: 36px;
-}
-.pain-btn.is-active { color: var(--on-signal); background: var(--signal); border-color: var(--signal); }
-.pain-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
-.pain-btn.is-yellow .pain-dot { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
-.pain-btn.is-red .pain-dot { background: currentColor; }
-.pain-hint { font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-top: var(--space-2); }
-
-/* ---- Phase banner --------------------------------------------------------
-   A week that deliberately reduces load/volume needs saying out loud, once,
-   rather than silently changing the numbers underneath you. */
-.phase-banner {
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  padding: var(--space-4);
-  margin: var(--space-4) 0;
-}
-.phase-note { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 6px; }
-
 /* ---- Install prompt ------------------------------------------------------- */
-.install-prompt { padding: var(--space-4); margin-bottom: var(--space-4); }
+.install-prompt { padding: var(--space-4); margin-bottom: var(--space-4); background: var(--signal-soft); border-color: var(--signal); }
 .install-copy { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 6px; }
-.install-ios {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 600;
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--line);
-}
+.install-ios { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line); color: var(--signal); }
 
 /* ---- Daily routine -------------------------------------------------------- */
 .routine { padding: var(--space-4); }
 .routine-head { display: flex; align-items: center; gap: var(--space-3); width: 100%; color: var(--text); }
 .routine-check {
-  width: 26px; height: 26px; flex: none;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
+  width: 28px; height: 28px; flex: none;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
   display: grid; place-items: center;
   color: var(--on-signal);
 }
-.routine-check.is-done { background: var(--signal); border-color: var(--signal); }
+.routine-check.is-done { background: var(--pr); border-color: var(--pr); }
 .routine-state { display: block; font-size: 13px; color: var(--text-muted); margin-top: 3px; }
 .routine-list { list-style: none; margin: var(--space-4) 0 0; padding: var(--space-3) 0 0; border-top: 1px solid var(--line); }
-.routine-list li { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 13px; padding: 5px 0; color: var(--text-muted); }
+.routine-list li { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 13px; padding: 6px 0; color: var(--text-muted); }
+
+/* ---- Empty & error states ------------------------------------------------- */
+.empty { padding: var(--space-8) 0; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.6; }
+.error-dump {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word;
+  background: var(--danger-soft); border: 1px solid var(--danger); color: var(--danger);
+  border-radius: var(--radius); padding: var(--space-4); margin: 0;
+}

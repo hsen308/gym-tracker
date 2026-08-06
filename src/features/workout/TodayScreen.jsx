@@ -6,9 +6,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { db, newId, upsertRow } from '../../db/dexie'
-import { useAuth } from '../../app/AuthProvider'
-import { todayLocalDate } from '../../lib/format'
+import { db } from '../../db/dexie'
 import Button from '../../components/Button'
 import OfflineBadge from '../../components/OfflineBadge'
 import Icon from '../../components/Icon'
@@ -18,7 +16,6 @@ import { programPhase, weeksToDeload } from '../../lib/phase'
 import { useProgramStart } from '../../lib/useProgramStart'
 
 export default function TodayScreen() {
-  const { user } = useAuth()
   const navigate = useNavigate()
 
   const days = useLiveQuery(() => db.program_days.orderBy('order_index').toArray(), [])
@@ -42,36 +39,14 @@ export default function TodayScreen() {
 
   const nextDay = suggestNextDay(days, lastFinished)
   const resumeDay = unfinished ? days.find((d) => d.id === unfinished.program_day_id) : null
-
-  const startDay = async (day) => {
-    const now = new Date().toISOString()
-    const workout = {
-      id: newId(),
-      user_id: user.id,
-      program_day_id: day.id,
-      date: todayLocalDate(),
-      started_at: now,
-      finished_at: null,
-      bodyweight_kg: null,
-      si_pain_score: null,
-      energy: null,
-      sleep_hours: null,
-      notes: null,
-      created_at: now,
-      updated_at: now,
-      deleted_at: null,
-    }
-    await upsertRow('workouts', workout)
-    navigate(`/workout/${workout.id}`)
-  }
-
   const featured = resumeDay ?? nextDay
+  const toDeload = weeksToDeload(phase?.week)
 
   return (
     <div className="container screen">
       <header className="screen-head">
         <div>
-          <p className="label">{format(new Date(), 'EEEE d MMM')}</p>
+          <p className="label">{format(new Date(), 'EEEE d MMMM')}</p>
           <h1 className="readout screen-title">TODAY</h1>
         </div>
         <OfflineBadge />
@@ -82,34 +57,25 @@ export default function TodayScreen() {
       {featured ? (
         <div className="panel next-card">
           <div>
-            <p className="label">{unfinished ? 'In progress' : 'Next session'}</p>
-            <p className="readout next-day-name" style={{ marginTop: 8 }}>{featured.name.toUpperCase()}</p>
+            <p className="label label-strong">{unfinished ? 'In progress' : 'Up next'}</p>
+            <p className="readout next-day-name">{featured.name.toUpperCase()}</p>
+            <p className="next-focus">{featured.focus} · {exerciseCounts[featured.id] ?? 0} exercises</p>
           </div>
-          <div className="next-meta">
-            <div>
-              <p className="label">Focus</p>
-              <p className="mono" style={{ fontSize: 13, marginTop: 4 }}>{featured.focus}</p>
-            </div>
-            <div>
-              <p className="label">Exercises</p>
-              <p className="mono" style={{ fontSize: 13, marginTop: 4 }}>{exerciseCounts[featured.id] ?? 0}</p>
-            </div>
-            {phase?.week != null && (
-              <div>
-                <p className="label">Week</p>
-                <p className="mono" style={{ fontSize: 13, marginTop: 4 }}>
-                  {phase.week}{phase.kind === 'deload' ? ' · deload' : ''}
-                </p>
-              </div>
-            )}
-          </div>
+
           {phase?.note && <p className="phase-note">{phase.note}</p>}
-          <Button
-            className="btn-block"
-            onClick={() => (unfinished ? navigate(`/workout/${unfinished.id}`) : startDay(featured))}
-          >
-            {unfinished ? `Resume ${featured.name}` : `Start ${featured.name}`}
-          </Button>
+
+          {/* Opening a day now PREVIEWS it. Starting is a separate, explicit
+              tap on the preview screen — checking what's on Push A shouldn't
+              leave a half-finished session behind. */}
+          {unfinished ? (
+            <Button className="btn-block" onClick={() => navigate(`/workout/${unfinished.id}`)}>
+              Resume {featured.name}
+            </Button>
+          ) : (
+            <Button className="btn-block" onClick={() => navigate(`/day/${featured.id}`)}>
+              View {featured.name}
+            </Button>
+          )}
         </div>
       ) : (
         <p className="empty">No program loaded yet.</p>
@@ -119,13 +85,22 @@ export default function TodayScreen() {
         <DailyRoutine />
       </div>
 
-      <h2 className="label section-label">All sessions</h2>
+      <div className="row section-label">
+        <h2 className="label">All sessions</h2>
+        {phase?.week != null && (
+          <span className="label">
+            Week {phase.week}{toDeload === 0 ? ' · deload' : toDeload === 1 ? ' · deload next' : ''}
+          </span>
+        )}
+      </div>
       <div className="panel rule-list">
         {days.map((day, i) => (
-          <button key={day.id} className="day-row pressable" onClick={() => startDay(day)}>
+          <button key={day.id} className="day-row pressable" onClick={() => navigate(`/day/${day.id}`)}>
             <span className="day-row-index">{String(i + 1).padStart(2, '0')}</span>
-            <span className="day-row-name">{day.name}</span>
-            <span className="mono faint" style={{ fontSize: 12 }}>{day.focus}</span>
+            <span className="day-row-main">
+              <span className="day-row-name">{day.name}</span>
+              <span className="day-row-focus">{day.focus} · {exerciseCounts[day.id] ?? 0} exercises</span>
+            </span>
             <Icon name="chevron" size={16} className="faint" />
           </button>
         ))}
