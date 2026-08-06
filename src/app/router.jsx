@@ -1,24 +1,39 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
 import TabBar from '../components/TabBar'
 import LoginScreen from '../features/auth/LoginScreen'
+
+// The logging path — login, Today, ActiveWorkout — is imported eagerly. It's
+// what you open in a gym basement, and a lazy chunk that has to be fetched
+// there is a chunk you don't get (build-plan §0 rule 2: the app must fully
+// function with airplane mode on).
 import TodayScreen from '../features/workout/TodayScreen'
 import ActiveWorkout from '../features/workout/ActiveWorkout'
-import SettingsScreen from '../features/settings/SettingsScreen'
-import HistoryList from '../features/history/HistoryList'
-import WorkoutDetail from '../features/history/WorkoutDetail'
-import ExerciseHistory from '../features/history/ExerciseHistory'
-import BodyScreen from '../features/body/BodyScreen'
-import InsightsScreen from '../features/insights/InsightsScreen'
-import MealsScreen from '../features/meals/MealsScreen'
+
+// Everything else is split out. These screens are read at a desk or on the
+// sofa, and keeping them out of the initial bundle means the part that has
+// to work on bad mobile data stays small. The service worker precaches the
+// chunks anyway, so after the first visit they're local too.
+const SettingsScreen = lazy(() => import('../features/settings/SettingsScreen'))
+const HistoryList = lazy(() => import('../features/history/HistoryList'))
+const WorkoutDetail = lazy(() => import('../features/history/WorkoutDetail'))
+const ExerciseHistory = lazy(() => import('../features/history/ExerciseHistory'))
+const BodyScreen = lazy(() => import('../features/body/BodyScreen'))
+const InsightsScreen = lazy(() => import('../features/insights/InsightsScreen'))
+const MealsScreen = lazy(() => import('../features/meals/MealsScreen'))
 
 // ActiveWorkout deliberately opts out — the logging path stays
 // distraction-free (build-plan §0 rule 3), nothing competes with it for
 // the bottom of the screen except the rest timer.
+// Suspense is what React shows while a lazy chunk is still downloading.
+// The fallback is deliberately blank rather than a spinner: these chunks are
+// tens of kB and precached, so a flash of "loading…" would be more visually
+// disruptive than the momentary gap it replaces.
 function WithTabBar({ children }) {
   return (
     <div className="with-tab-bar">
-      {children}
+      <Suspense fallback={null}>{children}</Suspense>
       <TabBar />
     </div>
   )
