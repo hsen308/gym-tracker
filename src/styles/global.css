@@ -75,8 +75,23 @@ button {
   transition: transform var(--dur-fast) var(--ease-standard),
               opacity var(--dur-fast) var(--ease-standard),
               background-color var(--dur-fast) var(--ease-standard);
+  /* `manipulation` switches off double-tap-to-zoom. Without it a mobile
+     browser holds every tap for ~300ms to see whether a second one is
+     coming, which is exactly the "laggy, sometimes doesn't register"
+     feeling on the steppers. */
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .pressable:active { transform: scale(0.985); opacity: 0.75; }
+
+/* Repeated jabs at +/- otherwise start selecting the number between them,
+   and a selection swallows the next pointerdown. */
+button, .steprow-value, .set-done, .ex-row {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
 
 /* build-plan §6e explicitly forbids removing focus outlines. */
 :focus-visible {

@@ -81,6 +81,21 @@ const SYNCED_TABLES = new Set(['exercises', 'program_days', 'program_exercises',
 
 async function queuePush(table, rowId) {
   if (!SYNCED_TABLES.has(table)) return // e.g. active_rest — local-only, never synced
+
+  // One pending entry per row is enough. The drain reads the CURRENT row out
+  // of Dexie when it uploads, so a single queued entry already covers every
+  // edit made to that row before it goes up.
+  //
+  // Without this, each nudge of a stepper queued its own upload: a few taps
+  // on steps or water enqueued dozens of identical pushes of the same row,
+  // which is most of what "73 changes waiting to upload" actually was.
+  //
+  // The existing entry is kept rather than replaced, so its position in the
+  // queue survives — order matters when a row references another (a workout
+  // has to land before its sets).
+  const already = await db.outbox.where('row_id').equals(rowId).first()
+  if (already && already.table_name === table) return
+
   await db.outbox.add({ table_name: table, op: 'upsert', row_id: rowId, created_at: new Date().toISOString(), attempts: 0 })
 }
 

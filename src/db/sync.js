@@ -47,7 +47,18 @@ export async function drainOutbox() {
       continue
     }
 
-    const { error } = await supabase.from(entry.table_name).upsert(row)
+    // `updated_at` is deliberately NOT sent. The server stamps it — column
+    // default on insert, touch_updated_at trigger on update — so it always
+    // means "when the server saw this", which is the only thing a pull
+    // watermark can safely compare against.
+    //
+    // Sending the local clock instead was silently losing rows: a session
+    // logged at 10:00 whose upload was stuck behind a failing entry would
+    // finally reach the server at 12:00 still carrying updated_at=10:00.
+    // Any device that had already pulled past 10:00 filtered it out forever.
+    // Two devices with slightly different clocks lose rows the same way.
+    const { updated_at, ...payload } = row
+    const { error } = await supabase.from(entry.table_name).upsert(payload)
     if (!error) {
       await db.outbox.delete(entry.seq)
       continue
@@ -73,21 +84,39 @@ export async function drainOutbox() {
 // Pulls anything changed on the server since the last successful pull.
 // Conflict rule (§5): last-write-wins by updated_at — a local `put()`
 // unconditionally overwrites, single-user so nothing more elaborate is needed.
+const EPOCH = '1970-01-01T00:00:00.000Z'
+
+// Watermarks are PER TABLE. A single shared one meant a table that errored
+// (a column the server didn't have yet, say) got skipped while the shared
+// watermark still advanced past its rows — so once the schema was fixed,
+// those rows were already behind the line and never came down.
 export async function pullChanges() {
   if (!isSupabaseConfigured || !navigator.onLine) return
 
-  const metaRow = await db.meta.get('last_pull_at')
-  let watermark = metaRow?.value ?? '1970-01-01T00:00:00.000Z'
+  const stored = (await db.meta.get('pull_watermarks'))?.value ?? {}
+  // Migrate the old single watermark, but rewind it: rows may have been
+  // pushed carrying a stale client `updated_at` and skipped. Starting these
+  // tables from scratch re-reads everything once and heals those gaps.
+  const legacy = (await db.meta.get('last_pull_at'))?.value
+  const watermarks = { ...stored }
 
   for (const table of SYNCED_TABLES) {
-    const { data, error } = await supabase.from(table).select('*').gt('updated_at', watermark)
+    const from = watermarks[table] ?? EPOCH
+    const { data, error } = await supabase.from(table).select('*').gt('updated_at', from).order('updated_at')
+    // Leave this table's watermark untouched on failure so its rows are
+    // retried next cycle rather than skipped permanently.
     if (error || !data) continue
+
+    let latest = from
     for (const row of data) {
       await db[table].put(row)
-      if (row.updated_at > watermark) watermark = row.updated_at
+      if (row.updated_at > latest) latest = row.updated_at
     }
+    watermarks[table] = latest
   }
-  await db.meta.put({ key: 'last_pull_at', value: watermark })
+
+  await db.meta.put({ key: 'pull_watermarks', value: watermarks })
+  if (legacy) await db.meta.delete('last_pull_at')
 }
 
 export async function runSync() {
