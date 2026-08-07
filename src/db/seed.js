@@ -381,11 +381,9 @@ const CORE_A = [
   { exercise_name: 'Pallof Press', target_sets: 3, rep_min: 12, rep_max: 12, rest_seconds: 45, notes: 'Each side' },
   { exercise_name: 'Side Plank', target_sets: 2, rep_min: 30, rep_max: 45, rest_seconds: 45, notes: 'Seconds, each side' },
 ]
-const CORE_B = [
-  { exercise_name: 'Machine Crunch', target_sets: 3, rep_min: 12, rep_max: 15, rest_seconds: 60 },
-  { exercise_name: 'Hanging Knee Raise', target_sets: 3, rep_min: 10, rep_max: 15, rest_seconds: 60 },
-  { exercise_name: 'Plank', target_sets: 2, rep_min: 45, rep_max: 60, rest_seconds: 45, notes: 'Seconds' },
-]
+// Core Block B is no longer programmed - abs run twice a week now rather than
+// three times. Machine Crunch / Hanging Knee Raise / Plank stay in the
+// exercise library so they remain available as swaps.
 const FOREARMS = [
   { exercise_name: 'Reverse Barbell Curl', target_sets: 3, rep_min: 12, rep_max: 15, rest_seconds: 60 },
   { exercise_name: 'Wrist Curl', target_sets: 3, rep_min: 15, rep_max: 20, rest_seconds: 45 },
@@ -393,63 +391,64 @@ const FOREARMS = [
 ]
 
 const DAY_PLANS = {
+  // Each movement pattern gets ONE heavy day and ONE volume day per week
+  // (daily undulating periodization). Strength responds to frequency more
+  // than to piling sets onto a single session, and per-session volume for
+  // any one muscle stays at or under ~10 sets: past roughly 11, extra sets
+  // in the SAME workout show no detectable additional growth.
   push_a: [
-    { exercise_name: 'Barbell Bench Press', target_sets: 4, rep_min: 4, rep_max: 6, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, is_strength_lift: true },
-    { exercise_name: 'Incline Dumbbell Press', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120 },
-    { exercise_name: 'Seated Machine Shoulder Press', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120 },
+    { exercise_name: 'Barbell Bench Press', target_sets: 4, rep_min: 4, rep_max: 6, target_rir_min: 1, target_rir_max: 2, rest_seconds: 240, is_strength_lift: true, notes: 'Heavy day - take the full 4 min' },
+    { exercise_name: 'Incline Dumbbell Press', target_sets: 3, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180 },
+    { exercise_name: 'Seated Machine Shoulder Press', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 150 },
     { exercise_name: 'Cable Fly', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90, notes: 'Or Machine Fly' },
-    { exercise_name: 'Lateral Raise', target_sets: 4, rep_min: 12, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Rope Triceps Pushdown', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Overhead Cable Triceps Extension', target_sets: 2, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+    { exercise_name: 'Cable Lateral Raise', target_sets: 4, rep_min: 12, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Rope Triceps Pushdown', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Overhead Cable Triceps Extension', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
     ...CORE_A,
   ],
   pull_a: [
-    { exercise_name: 'Weighted Pull-up', target_sets: 4, rep_min: 5, rep_max: 8, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, is_strength_lift: true, notes: 'Or heavy Lat Pulldown' },
-    { exercise_name: 'Chest-Supported Row', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120 },
-    { exercise_name: 'Seated Cable Row', target_sets: 3, rep_min: 10, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120 },
+    { exercise_name: 'Weighted Pull-up', target_sets: 4, rep_min: 5, rep_max: 8, target_rir_min: 1, target_rir_max: 2, rest_seconds: 240, is_strength_lift: true, notes: 'Heavy day. Or heavy Lat Pulldown' },
+    { exercise_name: 'Chest-Supported Row', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180 },
     { exercise_name: 'Straight-Arm Pulldown', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
     { exercise_name: 'Face Pull', target_sets: 3, rep_min: 15, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Shrug', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Barbell Curl', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Incline Dumbbell Curl', target_sets: 2, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+    { exercise_name: 'Incline Dumbbell Curl', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Hammer Curl', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
     ...FOREARMS,
   ],
   legs_a: [
-    { exercise_name: 'Leg Press', target_sets: 4, rep_min: 6, rep_max: 8, target_rir_min: 2, target_rir_max: 2, rest_seconds: 180, is_strength_lift: true },
+    { exercise_name: 'Leg Press', target_sets: 4, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 240, is_strength_lift: true, notes: 'Heavy day. Belt Squat is the safer swap' },
+    { exercise_name: 'Hack Squat', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, notes: 'Test light first - swap for Belt or Smith Squat if it irritates the joint' },
     { exercise_name: 'Leg Extension', target_sets: 4, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
-    { exercise_name: 'Seated Leg Curl', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
-    { exercise_name: 'Hip Abduction Machine', target_sets: 3, rep_min: 15, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Standing Calf Raise', target_sets: 4, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+    { exercise_name: 'Seated Leg Curl', target_sets: 4, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 120 },
+    { exercise_name: 'Hip Abduction Machine', target_sets: 3, rep_min: 15, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60, notes: 'Glute medius - directly protects the SI joint' },
+    { exercise_name: 'Standing Calf Raise', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
     ...CORE_A,
   ],
   push_b: [
-    { exercise_name: 'Seated Overhead Press', target_sets: 4, rep_min: 5, rep_max: 6, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, is_strength_lift: true, notes: 'Barbell or machine — seated, never standing' },
-    { exercise_name: 'Flat Dumbbell Press', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120 },
-    { exercise_name: 'Incline Cable Fly', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90, notes: 'Or Machine Fly' },
-    { exercise_name: 'Cable Lateral Raise', target_sets: 4, rep_min: 12, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Dips', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120, notes: 'Or dip machine' },
-    { exercise_name: 'Close-Grip Bench Press', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90, notes: 'Or Skullcrusher' },
-    { exercise_name: 'Triceps Pushdown', target_sets: 2, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    ...CORE_B,
+    { exercise_name: 'Seated Overhead Press', target_sets: 4, rep_min: 5, rep_max: 8, target_rir_min: 1, target_rir_max: 2, rest_seconds: 240, is_strength_lift: true, notes: 'Heavy day. Seated, never standing' },
+    { exercise_name: 'Flat Dumbbell Press', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180 },
+    { exercise_name: 'Dips', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 150, notes: 'Or dip machine' },
+    { exercise_name: 'Incline Cable Fly', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Lateral Raise', target_sets: 4, rep_min: 12, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Close-Grip Bench Press', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 120, notes: 'Or Skullcrusher' },
+    { exercise_name: 'Triceps Pushdown', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
   ],
   pull_b: [
-    { exercise_name: 'Weighted Chin-up', target_sets: 4, rep_min: 5, rep_max: 8, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, is_strength_lift: true, notes: 'Or Neutral-Grip Pulldown' },
-    { exercise_name: 'T-Bar Row', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120, notes: 'Chest-supported. Or Machine Row' },
+    { exercise_name: 'T-Bar Row', target_sets: 4, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 240, is_strength_lift: true, notes: 'Heavy day. Chest-supported. Or Machine Row' },
+    { exercise_name: 'Weighted Chin-up', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, notes: 'Or Neutral-Grip Pulldown' },
     { exercise_name: 'Wide-Grip Lat Pulldown', target_sets: 3, rep_min: 10, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120 },
-    { exercise_name: 'Single-Arm Cable Row', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
     { exercise_name: 'Rear Delt Fly', target_sets: 3, rep_min: 15, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Shrug', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Hammer Curl', target_sets: 3, rep_min: 10, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Cable Curl', target_sets: 2, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+    { exercise_name: 'Shrug', target_sets: 4, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Barbell Curl', target_sets: 3, rep_min: 6, rep_max: 10, target_rir_min: 0, target_rir_max: 1, rest_seconds: 120 },
     ...FOREARMS,
   ],
   legs_b: [
-    { exercise_name: 'Hack Squat', target_sets: 4, rep_min: 6, rep_max: 8, target_rir_min: 2, target_rir_max: 2, rest_seconds: 180, is_strength_lift: true, notes: 'Test light first — swap for Belt Squat or Smith Squat if it irritates the joint' },
-    { exercise_name: 'Lying Leg Curl', target_sets: 4, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
-    { exercise_name: 'Leg Press', target_sets: 3, rep_min: 10, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120, notes: 'Feet high, glute bias' },
-    { exercise_name: 'Hip Thrust Machine', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90, notes: 'Or Glute Kickback' },
-    { exercise_name: 'Leg Extension', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
-    { exercise_name: 'Seated Calf Raise', target_sets: 4, rep_min: 12, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+    { exercise_name: 'Lying Leg Curl', target_sets: 4, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 240, is_strength_lift: true, notes: 'Heavy day - hamstrings lead here' },
+    { exercise_name: 'Leg Press', target_sets: 4, rep_min: 10, rep_max: 15, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, notes: 'Feet high, glute bias' },
+    { exercise_name: 'Hip Thrust Machine', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 150, notes: 'Machine over barbell - easier to keep the pelvis neutral' },
+    { exercise_name: 'Seated Leg Curl', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Hip Abduction Machine', target_sets: 3, rep_min: 15, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+    { exercise_name: 'Seated Calf Raise', target_sets: 4, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
   ],
 }
 
@@ -499,7 +498,7 @@ export const MEAL_PRESETS = [
 // every workout screen came up blank.
 // 3 — program_exercises ids are now stable across re-seeds, and this pass
 //     repairs the dangling references version 2 left behind.
-export const SEED_VERSION = 3
+export const SEED_VERSION = 4
 
 // Reconcile, don't wipe and re-create. Exercises are matched BY NAME so their
 // ids survive, which matters because every logged set points at one — a
