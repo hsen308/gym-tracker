@@ -22,6 +22,15 @@ export function SyncProvider({ children }) {
   const pending = useLiveQuery(() => db.outbox.count(), []) ?? 0
   const seededFor = useRef(null)
 
+  // Watched, not read once: on a brand-new account the profile doesn't exist
+  // until setup finishes, and seeding has to run the moment it appears.
+  // Reading it a single time at mount would leave a new user with a chosen
+  // programme and an empty app until they reloaded.
+  const templateKey = useLiveQuery(
+    async () => (user ? (await db.profiles.where('user_id').equals(user.id).first())?.program_template ?? null : null),
+    [user?.id],
+  )
+
   const syncNow = useCallback(async () => {
     setSyncing(true)
     try {
@@ -42,9 +51,21 @@ export function SyncProvider({ children }) {
     // manual cleanup. In practice a first login is online.
     const bootstrap = async () => {
       await syncNow()
-      if (cancelled || seededFor.current === user.id) return
-      seededFor.current = user.id
-      await seedIfEmpty(user.id)
+      if (cancelled) return
+
+      // Seeding needs the profile: it decides which programme is written and
+      // whether the SI-joint cautions apply. A brand-new account has no
+      // profile until it finishes setup, so there is nothing to seed yet —
+      // writing the default programme here would hand every new user someone
+      // else's training plan before they'd answered a single question.
+      const profile = await db.profiles.where('user_id').equals(user.id).first()
+      if (!profile) return
+
+      const stamp = `${user.id}:${profile.program_template}`
+      if (seededFor.current === stamp) return
+      seededFor.current = stamp
+
+      await seedIfEmpty(user.id, profile)
       if (!cancelled) await syncNow() // push whatever seeding just created
     }
     bootstrap()
@@ -63,7 +84,7 @@ export function SyncProvider({ children }) {
       window.removeEventListener('online', onOnline)
       clearInterval(id)
     }
-  }, [user?.id, syncNow])
+  }, [user?.id, templateKey, syncNow])
 
   return (
     <SyncContext.Provider value={{ syncNow, syncing, pending }}>

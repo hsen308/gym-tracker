@@ -525,6 +525,48 @@
 .routine-list { list-style: none; margin: var(--space-4) 0 0; padding: var(--space-3) 0 0; border-top: 1px solid var(--line); }
 .routine-list li { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 13px; padding: 6px 0; color: var(--text-muted); }
 
+/* ---- Setup wizard --------------------------------------------------------
+   Shown once, to an account with no profile. Deliberately spacious — this is
+   the only screen in the app that isn't used mid-set. */
+.setup { padding-bottom: 140px; }
+.setup-head { margin-bottom: var(--space-6); }
+.setup-progress { height: 2px; background: var(--surface-high); margin-top: var(--space-3); }
+.setup-progress > div { height: 100%; background: var(--signal); transition: width var(--dur-med) var(--ease-standard); }
+.setup-title { font-size: 36px; letter-spacing: -0.03em; line-height: 0.95; }
+
+.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.choice-col { display: flex; flex-direction: column; gap: var(--space-3); }
+.choice {
+  display: flex; flex-direction: column; gap: 4px;
+  text-align: left;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-height: var(--tap);
+  transition: border-color var(--dur-fast), background-color var(--dur-fast);
+}
+.choice.is-active { border-color: var(--signal); background: var(--signal-soft); box-shadow: inset 0 0 0 1px var(--signal); }
+.choice-title { font-weight: 600; font-size: var(--fs-sm); }
+.choice-sub { font-size: var(--fs-2xs); color: var(--text-muted); line-height: 1.45; }
+.choice-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+.choice.is-active .choice-title { color: var(--signal); }
+
+.setup-preview { padding: var(--space-4); margin-top: var(--space-5); }
+.setup-preview-main { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.02em; margin-top: 6px; }
+.setup-preview-sub { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 4px; }
+.setup-preview-note { font-size: var(--fs-2xs); color: var(--text-faint); margin-top: var(--space-3); }
+
+.setup-actions {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex; gap: var(--space-2);
+  max-width: 480px; margin: 0 auto;
+  padding: var(--space-4) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom));
+  background: rgba(245, 243, 238, 0.92);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+}
+
 /* ---- Empty & error states ------------------------------------------------- */
 .empty { padding: var(--space-8) 0; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.6; }
 .error-dump {

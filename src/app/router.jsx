@@ -1,8 +1,12 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
+import { useProfile } from './ProfileProvider'
 import TabBar from '../components/TabBar'
 import LoginScreen from '../features/auth/LoginScreen'
+// Eager, not lazy: it's the first thing a new account sees, and a chunk
+// fetch at that moment is the worst possible first impression.
+import SetupScreen from '../features/setup/SetupScreen'
 
 // The logging path — login, Today, ActiveWorkout — is imported eagerly. It's
 // what you open in a gym basement, and a lazy chunk that has to be fetched
@@ -46,8 +50,14 @@ function WithTabBar({ children }) {
 // as an imperative side effect.
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return null // could be a splash screen; nothing to show yet either way
+  const { loading: profileLoading, exists } = useProfile()
+
+  if (loading || profileLoading) return null // could be a splash; nothing to show either way
   if (!user) return <Navigate to="/login" replace />
+  // A signed-in account with no profile has never been set up. It gets the
+  // wizard instead of the app — the alternative is handing a new person
+  // someone else's programme, calorie target and injury protocol.
+  if (!exists) return <SetupScreen />
   return children
 }
 

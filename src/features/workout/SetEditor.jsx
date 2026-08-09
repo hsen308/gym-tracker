@@ -2,10 +2,10 @@ import { useState } from 'react'
 import StepperRow from '../../components/StepperRow'
 import Button from '../../components/Button'
 import Sheet from '../../components/Sheet'
-import { formatWeight } from '../../lib/format'
 import { formatPlates } from '../../lib/plates'
+import { formatWeightIn, toDisplay, fromDisplay, STEP } from '../../lib/units'
+import { useUnit } from '../../app/ProfileProvider'
 import { weightMode, REPS_LEFT_LABEL, REPS_LEFT_HELP } from '../../lib/weightMode'
-import { WEIGHT_STEP_KG, WEIGHT_STEP_KG_LONG_PRESS } from '../../lib/constants'
 
 // The set input, shared by "log the next set" and "edit a set I already
 // logged". Editing matters more than it looks: entering a session after
@@ -16,9 +16,11 @@ export default function SetEditor({
   onDelete, compact,
 }) {
   const [help, setHelp] = useState(null)
+  const unit = useUnit()
+  const step = STEP[unit]
   const isDuration = exercise?.tracks === 'duration'
   const mode = weightMode(exercise)
-  const plates = !isDuration && exercise?.equipment === 'barbell' ? formatPlates(draft.weight_kg) : null
+  const plates = !isDuration && exercise?.equipment === 'barbell' ? formatPlates(draft.weight_kg, unit) : null
 
   // build-plan §9: "double-tap on confirm creates duplicate sets."
   const [busy, setBusy] = useState(false)
@@ -48,10 +50,10 @@ export default function SetEditor({
             label="Weight"
             hint={mode.hint}
             onHelp={mode.help ? () => setHelp({ title: 'What weight to enter', body: mode.help }) : undefined}
-            value={draft.weight_kg}
-            step={WEIGHT_STEP_KG} longPressStep={WEIGHT_STEP_KG_LONG_PRESS} min={0}
-            format={formatWeight}
-            onChange={(weight_kg) => onChange({ ...draft, weight_kg })}
+            value={toDisplay(draft.weight_kg, unit) ?? 0}
+            step={step.small} longPressStep={step.large} min={0}
+            format={(n) => `${n}${unit}`}
+            onChange={(shown) => onChange({ ...draft, weight_kg: fromDisplay(shown, unit) })}
           />
           {plates && <p className="plate-hint">{plates === 'bar only' ? 'Empty bar' : `${plates} per side`}</p>}
 

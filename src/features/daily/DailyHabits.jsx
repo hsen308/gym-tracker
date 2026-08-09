@@ -10,12 +10,13 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId, upsertRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
 import { todayLocalDate } from '../../lib/format'
-import { DAILY_TARGETS } from '../../lib/constants'
+import { useProfile } from '../../app/ProfileProvider'
 import StepperRow from '../../components/StepperRow'
 
 export default function DailyHabits() {
   const { user } = useAuth()
   const today = todayLocalDate()
+  const { profile } = useProfile()
   const log = useLiveQuery(() => db.daily_logs.where('date').equals(today).first(), [today])
 
   // Steppers move the number on screen immediately and write to the database
@@ -65,7 +66,7 @@ export default function DailyHabits() {
   return (
     <div className="panel" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
       <StepperRow
-        label="Steps" hint={`target ${DAILY_TARGETS.steps.toLocaleString()}`}
+        label="Steps" hint={`target ${profile.steps_target.toLocaleString()}`}
         value={value('steps')} step={500} longPressStep={2000} min={0} max={60000}
         format={(v) => v.toLocaleString()}
         onChange={(steps) => patch({ steps })}
@@ -77,7 +78,7 @@ export default function DailyHabits() {
         onChange={(cardio_minutes) => patch({ cardio_minutes })}
       />
       <StepperRow
-        label="Water" hint={`target ${DAILY_TARGETS.water_litres} L`}
+        label="Water" hint={`target ${profile.water_target_l} L`}
         value={value('water_litres')} step={0.25} longPressStep={0.5} min={0} max={8}
         format={(v) => `${v} L`}
         onChange={(water_litres) => patch({ water_litres })}

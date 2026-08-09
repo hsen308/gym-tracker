@@ -9,7 +9,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId, upsertRow, softDeleteRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
 import { todayLocalDate } from '../../lib/format'
-import { MACRO_TARGET, MEAL_SLOTS } from '../../lib/constants'
+import { MEAL_SLOTS } from '../../lib/constants'
+import { useProfile } from '../../app/ProfileProvider'
 import Sheet from '../../components/Sheet'
 import Button from '../../components/Button'
 import Field from '../../components/Field'
@@ -18,6 +19,9 @@ import DayEstimateSheet from './DayEstimateSheet'
 
 export default function MealsScreen() {
   const { user } = useAuth()
+  // Targets are per person now, not a constant in the source.
+  const { profile } = useProfile()
+  const MACRO_TARGET = profile
   const today = todayLocalDate()
 
   const presets = useLiveQuery(() => db.meal_presets.filter((m) => !m.deleted_at).toArray(), [])

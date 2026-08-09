@@ -1,10 +1,12 @@
-import { formatWeight } from '../../lib/format'
+import { formatWeightIn } from '../../lib/units'
+import { useUnit } from '../../app/ProfileProvider'
 
 // A set that's already been logged: one dense, tappable line.
 // Tapping opens the editor (ExercisePanel owns that sheet) — the previous
 // build only offered hold-to-delete, which is the wrong tool for the common
 // case of "I typed 7 instead of 8".
 export default function SetRow({ setNumber, confirmedSet, isPR, isWarmup, onEdit }) {
+  const unit = useUnit()
   const isDuration = confirmedSet.duration_seconds != null
 
   return (
@@ -13,7 +15,7 @@ export default function SetRow({ setNumber, confirmedSet, isPR, isWarmup, onEdit
       <span className="set-done-load">
         {isDuration
           ? `${confirmedSet.duration_seconds}s`
-          : `${formatWeight(confirmedSet.weight_kg)} × ${confirmedSet.reps}`}
+          : `${formatWeightIn(confirmedSet.weight_kg, unit)} × ${confirmedSet.reps}`}
       </span>
       {/* "2 left" reads at a glance; "RIR 2" needs decoding. Same column. */}
       {confirmedSet.rir != null && !isDuration && (

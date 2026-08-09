@@ -146,6 +146,15 @@ export const EXERCISES = [
     setup_notes: 'Grip WIDER than standard — roughly 1.5× shoulder width.',
     cues: ['Wider grip biases upper lats and back width.', 'Shorter range than you think — pull to the collarbone, don\'t force it lower.'],
   }),
+  pull('Barbell Row', 'upper_back', ['lats', 'biceps'], 'barbell', {
+    si_risk: 'caution',
+    setup_notes: 'Hinge to roughly 45°, bar over mid-foot, grip just outside the knees.',
+    cues: [
+      'Hold the torso angle still for the whole set — if it rises to move the bar, go lighter.',
+      'Pull to the lower ribs, elbows close to the body.',
+      'Flat back throughout. This is the reason the chest-supported version exists.',
+    ],
+  }),
   pull('Chest-Supported Row', 'upper_back', ['lats', 'biceps'], 'machine', {
     setup_notes: 'Pad at UPPER CHEST level so your chin clears the top. Feet planted.',
     cues: [
@@ -224,6 +233,35 @@ export const EXERCISES = [
   }),
 
   // ---- Legs ----
+  // The spine-loading lifts. Marked `caution` because that is what they are
+  // FOR A LOADED SI JOINT — seeding maps this down to 'none' for anyone whose
+  // profile doesn't flag the joint, so a healthy account just sees a squat.
+  legs('Barbell Back Squat', 'quads', ['glutes', 'hamstrings'], 'barbell', {
+    si_risk: 'caution',
+    setup_notes: 'Bar on the upper traps, feet shoulder width, toes slightly out.',
+    cues: [
+      'Brace hard before you unrack, not after.',
+      'Knees track over the toes; push the floor apart.',
+      'Depth to where you can hold a neutral spine — no lower.',
+      'Avoid: letting the hips shoot up first out of the bottom.',
+    ],
+  }),
+  legs('Front Squat', 'quads', ['glutes'], 'barbell', {
+    si_risk: 'caution',
+    setup_notes: 'Bar across the front delts, elbows high. Feet shoulder width.',
+    cues: ['Elbows stay up — dropping them dumps the bar forward.', 'More upright than a back squat, so quads take more of it.'],
+  }),
+  legs('Romanian Deadlift', 'hamstrings', ['glutes'], 'barbell', {
+    si_risk: 'caution',
+    setup_notes: 'Start standing, bar at the hips. Soft knees, bar stays against the legs.',
+    cues: [
+      'Push the hips BACK, don\'t bend down. The bar travels down your thighs.',
+      'Stop when the hamstrings stop stretching — usually mid-shin, often higher.',
+      'Flat back throughout. The moment it rounds, the set is over.',
+      'This is a hinge, not a squat: shins stay near vertical.',
+    ],
+  }),
+
   legs('Leg Press', 'quads', ['glutes'], 'machine', {
     si_risk: 'caution',
     setup_notes: 'Feet shoulder width, SLIGHTLY HIGHER on the platform than centre. Back and hips flat against the pad.',
@@ -364,13 +402,20 @@ export const EXERCISES = [
   }),
 ]
 
-export const PROGRAM_DAYS = [
+const PPL_DAYS = [
   { code: 'push_a', name: 'Push A', focus: 'Chest', order_index: 1 },
   { code: 'pull_a', name: 'Pull A', focus: 'Vertical', order_index: 2 },
   { code: 'legs_a', name: 'Legs A', focus: 'Quads', order_index: 3 },
   { code: 'push_b', name: 'Push B', focus: 'Shoulders', order_index: 4 },
   { code: 'pull_b', name: 'Pull B', focus: 'Horizontal', order_index: 5 },
   { code: 'legs_b', name: 'Legs B', focus: 'Hamstrings', order_index: 6 },
+]
+
+const UPPER_LOWER_DAYS = [
+  { code: 'upper_a', name: 'Upper A', focus: 'Heavy', order_index: 1 },
+  { code: 'lower_a', name: 'Lower A', focus: 'Heavy', order_index: 2 },
+  { code: 'upper_b', name: 'Upper B', focus: 'Volume', order_index: 3 },
+  { code: 'lower_b', name: 'Lower B', focus: 'Volume', order_index: 4 },
 ]
 
 // Core and forearm blocks bolt onto the end of specific sessions (PDF: "they
@@ -452,9 +497,58 @@ const DAY_PLANS = {
   ],
 }
 
+// ---------------------------------------------------------------------------
+// Template 2 — 4-day upper/lower, lean bulk, no joint restrictions.
+//
+// Different person, different constraints: a surplus rather than a deficit, no
+// SI joint to work around, an hour rather than two, and coming off unstructured
+// training. Four days beats six here for two reasons — each muscle still gets
+// hit twice a week, and fewer sessions burn fewer calories, which matters when
+// the hard part of gaining weight is eating enough.
+//
+// Heavy day / volume day per pattern, same undulating idea as the PPL. Squats,
+// RDLs and barbell rows are in because nothing rules them out.
+// ---------------------------------------------------------------------------
+const UPPER_LOWER_PLANS = {
+  upper_a: [
+    { exercise_name: 'Barbell Bench Press', target_sets: 4, rep_min: 5, rep_max: 8, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, is_strength_lift: true, notes: 'Heavy day' },
+    { exercise_name: 'Barbell Row', target_sets: 4, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180 },
+    { exercise_name: 'Seated Overhead Press', target_sets: 3, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 150 },
+    { exercise_name: 'Lat Pulldown', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 120 },
+    { exercise_name: 'Cable Fly', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Incline Dumbbell Curl', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Rope Triceps Pushdown', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+  ],
+  lower_a: [
+    { exercise_name: 'Barbell Back Squat', target_sets: 4, rep_min: 5, rep_max: 8, target_rir_min: 1, target_rir_max: 2, rest_seconds: 210, is_strength_lift: true, notes: 'Heavy day - take the full rest' },
+    { exercise_name: 'Romanian Deadlift', target_sets: 3, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, notes: 'Hips back, not down. Stop when the back would round' },
+    { exercise_name: 'Leg Press', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 120 },
+    { exercise_name: 'Lying Leg Curl', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Standing Calf Raise', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Hanging Knee Raise', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+  ],
+  upper_b: [
+    { exercise_name: 'Incline Dumbbell Press', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 150 },
+    { exercise_name: 'Weighted Pull-up', target_sets: 4, rep_min: 6, rep_max: 10, target_rir_min: 1, target_rir_max: 2, rest_seconds: 150, notes: 'Bodyweight or assisted until 8 clean reps' },
+    { exercise_name: 'Seated Machine Shoulder Press', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 120 },
+    { exercise_name: 'Chest-Supported Row', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 120 },
+    { exercise_name: 'Lateral Raise', target_sets: 4, rep_min: 12, rep_max: 20, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+    { exercise_name: 'Hammer Curl', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Overhead Cable Triceps Extension', target_sets: 3, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+  ],
+  lower_b: [
+    { exercise_name: 'Hack Squat', target_sets: 4, rep_min: 8, rep_max: 12, target_rir_min: 1, target_rir_max: 2, rest_seconds: 180, notes: 'Or Front Squat' },
+    { exercise_name: 'Hip Thrust Machine', target_sets: 3, rep_min: 8, rep_max: 12, target_rir_min: 0, target_rir_max: 1, rest_seconds: 150 },
+    { exercise_name: 'Leg Extension', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Seated Leg Curl', target_sets: 4, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Seated Calf Raise', target_sets: 4, rep_min: 10, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 90 },
+    { exercise_name: 'Cable Crunch', target_sets: 3, rep_min: 12, rep_max: 15, target_rir_min: 0, target_rir_max: 1, rest_seconds: 60 },
+  ],
+}
+
 // Flattened into the shape program_exercises expects, with order_index derived
-// from array position so the PDF's ordering is the source of truth.
-export const PROGRAM_EXERCISES = Object.entries(DAY_PLANS).flatMap(([day_code, list]) =>
+// from array position so the written order is the source of truth.
+const flatten = (plans) => Object.entries(plans).flatMap(([day_code, list]) =>
   list.map((pe, i) => ({ day_code, order_index: i + 1, ...pe })),
 )
 
@@ -490,6 +584,56 @@ export const MEAL_PRESETS = [
   dinner('200g grilled fish + grilled vegetables + small rice portion'),
 ]
 
+// Meals for a surplus. Deliberately generic rather than regional — the
+// Lebanese list above is specific to one person's kitchen, and calorie-dense
+// staples travel better. Slot macros are scaled to ~2,700 kcal.
+const bMeal = meal('breakfast', 700, 40, 75, 25)
+const lMeal = meal('lunch', 850, 50, 100, 25)
+const pMeal = meal('pre_post', 550, 30, 85, 8)
+const dMeal = meal('dinner', 600, 40, 60, 20)
+
+const BULK_MEAL_PRESETS = [
+  bMeal('4 eggs, 2 toast, avocado, glass of milk'),
+  bMeal('100g oats, whey or milk, banana, 2 tbsp peanut butter'),
+  bMeal('Greek yogurt bowl, granola, berries, honey, mixed nuts'),
+
+  lMeal('200g chicken, 2 cups rice, vegetables, olive oil'),
+  lMeal('Beef and rice bowl, beans, cheese, salsa'),
+  lMeal('Pasta with 180g lean mince, tomato sauce, parmesan'),
+  lMeal('2 chicken wraps, cheese, salad, side of fruit'),
+
+  pMeal('Whey shake with milk, banana, oats'),
+  pMeal('Bagel with peanut butter and honey'),
+  pMeal('Rice cakes, turkey, glass of juice'),
+
+  dMeal('200g salmon or steak, potatoes, vegetables'),
+  dMeal('Chicken stir-fry with noodles and vegetables'),
+  dMeal('Burrito bowl — rice, beans, chicken, cheese, guacamole'),
+]
+
+// ---------------------------------------------------------------------------
+// The templates. Adding one is a code change; the profile records which
+// applies to an account, and seeding reads it.
+// ---------------------------------------------------------------------------
+export const TEMPLATES = {
+  ppl_si_recomp: {
+    label: '6-day push/pull/legs',
+    blurb: 'Recomposition, heavy/volume undulation, built around a sacroiliac joint.',
+    days: PPL_DAYS,
+    programExercises: flatten(DAY_PLANS),
+    meals: MEAL_PRESETS,
+  },
+  upper_lower_bulk: {
+    label: '4-day upper/lower',
+    blurb: 'Lean bulk. Each muscle twice a week, roughly an hour a session.',
+    days: UPPER_LOWER_DAYS,
+    programExercises: flatten(UPPER_LOWER_PLANS),
+    meals: BULK_MEAL_PRESETS,
+  },
+}
+
+export const DEFAULT_TEMPLATE = 'ppl_si_recomp'
+
 // Bump when the program above changes. Devices seeded at an older version
 // reconcile up to this one on next launch. The original "seed once, only if
 // program_days is empty" check was not enough: an early build seeded the six
@@ -498,17 +642,30 @@ export const MEAL_PRESETS = [
 // every workout screen came up blank.
 // 3 — program_exercises ids are now stable across re-seeds, and this pass
 //     repairs the dangling references version 2 left behind.
-export const SEED_VERSION = 4
+// 5 — templates. The programme is chosen by the profile rather than being
+//     the only one in the file.
+export const SEED_VERSION = 5
 
 // Reconcile, don't wipe and re-create. Exercises are matched BY NAME so their
 // ids survive, which matters because every logged set points at one — a
 // delete-and-reinsert would orphan your entire training history.
-export async function seedIfEmpty(userId) {
+//
+// `profile` decides which programme is seeded and whether the SI-joint
+// cautions apply. It's optional so a first run with no profile yet still
+// lands somewhere sensible rather than throwing.
+export async function seedIfEmpty(userId, profile) {
+  const templateKey = profile?.program_template ?? DEFAULT_TEMPLATE
+  const template = TEMPLATES[templateKey] ?? TEMPLATES[DEFAULT_TEMPLATE]
+  const hasSiJoint = profile?.has_si_joint ?? (templateKey === 'ppl_si_recomp')
+
   const storedVersion = (await db.meta.get('seed_version'))?.value ?? 0
+  const storedTemplate = (await db.meta.get('seed_template'))?.value
   const dayCount = await db.program_days.count()
   const programCount = await db.program_exercises.count()
-  // Nothing to do only if we're current AND the program actually has content.
-  if (storedVersion >= SEED_VERSION && dayCount > 0 && programCount > 0) return
+  // Re-seed when the version moves, when the programme is empty, or when the
+  // profile has switched to a different template.
+  const current = storedVersion >= SEED_VERSION && storedTemplate === templateKey
+  if (current && dayCount > 0 && programCount > 0) return
 
   const now = new Date().toISOString()
   const stamp = (row) => ({ user_id: userId, created_at: now, updated_at: now, deleted_at: null, ...row })
@@ -523,14 +680,19 @@ export async function seedIfEmpty(userId) {
   // Keep the existing id where the row already exists; only mint a new one for
   // genuinely new rows. `deleted_at: null` also un-deletes anything that was
   // soft-deleted by an older build.
+  //
+  // si_risk is relative to the person: a back squat is a caution FOR A LOADED
+  // SI JOINT and an ordinary lift for everyone else. Without this, a healthy
+  // account would be warned off squats and shown a pelvic-stability lecture.
   const exerciseRows = EXERCISES.map((e) => ({
     ...stamp(e),
+    si_risk: hasSiJoint ? e.si_risk : 'none',
     id: exerciseByName[e.name]?.id ?? newId(),
     created_at: exerciseByName[e.name]?.created_at ?? now,
   }))
   const exerciseIdByName = Object.fromEntries(exerciseRows.map((e) => [e.name, e.id]))
 
-  const dayRows = PROGRAM_DAYS.map((d) => ({
+  const dayRows = template.days.map((d) => ({
     ...stamp(d),
     id: dayByCode[d.code]?.id ?? newId(),
     created_at: dayByCode[d.code]?.created_at ?? now,
@@ -539,7 +701,7 @@ export async function seedIfEmpty(userId) {
 
   // Custom foods you added yourself are never touched — only the presets that
   // came from the program are reconciled.
-  const mealRows = MEAL_PRESETS.map((m) => ({
+  const mealRows = template.meals.map((m) => ({
     ...stamp({ is_custom: false, ...m }),
     id: mealByName[m.name]?.id ?? newId(),
     created_at: mealByName[m.name]?.created_at ?? now,
@@ -547,7 +709,7 @@ export async function seedIfEmpty(userId) {
 
   // Fail loudly rather than silently seeding a day with missing exercises —
   // a typo in DAY_PLANS would otherwise produce a workout screen with holes.
-  const missing = PROGRAM_EXERCISES.filter((pe) => !exerciseIdByName[pe.exercise_name])
+  const missing = template.programExercises.filter((pe) => !exerciseIdByName[pe.exercise_name])
   if (missing.length) throw new Error(`[seed] Program references unknown exercises: ${missing.map((m) => m.exercise_name).join(', ')}`)
 
   // A slot's identity is (day, position) — that's the natural key, and it's
@@ -561,7 +723,7 @@ export async function seedIfEmpty(userId) {
     existingProgramExercises.map((p) => [slotKey(p.program_day_id, p.order_index), p]),
   )
 
-  const programExerciseRows = PROGRAM_EXERCISES.map((pe) => {
+  const programExerciseRows = template.programExercises.map((pe) => {
     const program_day_id = dayIdByCode[pe.day_code]
     const prev = existingSlot[slotKey(program_day_id, pe.order_index)]
     return {
@@ -622,6 +784,7 @@ export async function seedIfEmpty(userId) {
       if (repairedSlots.length) await db.workout_exercises.bulkPut(repairedSlots)
 
       await db.meta.put({ key: 'seed_version', value: SEED_VERSION })
+      await db.meta.put({ key: 'seed_template', value: templateKey })
       await db.outbox.bulkAdd([
         ...outboxFor('exercises', exerciseRows),
         ...outboxFor('program_days', dayRows),

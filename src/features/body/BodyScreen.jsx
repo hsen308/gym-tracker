@@ -11,12 +11,17 @@ import Button from '../../components/Button'
 import Field from '../../components/Field'
 import Toast from '../../components/Toast'
 import DailyHabits from '../daily/DailyHabits'
+import { useProfile } from '../../app/ProfileProvider'
+import { toDisplay, fromDisplay, STEP, unitLabel } from '../../lib/units'
 
 const WeightChart = lazy(() => import('./WeightChart'))
 const BLANK_MEASURE = { waist_cm: '', chest_cm: '', arm_cm: '', thigh_cm: '' }
 
 export default function BodyScreen() {
   const { user } = useAuth()
+  const { profile } = useProfile()
+  const unit = profile.unit_weight
+  const bwStep = STEP[unit]
   const today = todayLocalDate()
 
   const logs = useLiveQuery(() => db.bodyweight_logs.filter((l) => !l.deleted_at).sortBy('date'), [])
@@ -35,7 +40,9 @@ export default function BodyScreen() {
   // never 0, which would mean twenty taps to get back to a real bodyweight.
   useEffect(() => {
     if (weight !== null || !logs) return
-    setWeight(todayLog?.weight_kg ?? logs[logs.length - 1]?.weight_kg ?? 78.5)
+    // Last entry, else the target they set at setup, else a neutral 70 kg —
+    // never 0, which would mean twenty taps back to a real bodyweight.
+    setWeight(todayLog?.weight_kg ?? logs[logs.length - 1]?.weight_kg ?? profile.target_weight_kg ?? 70)
   }, [logs, todayLog, weight])
 
   useEffect(() => {
@@ -98,18 +105,24 @@ export default function BodyScreen() {
       <div className="panel" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-4)' }}>
         <p className="label">7-day average</p>
         <p className="readout readout-lg" style={{ marginTop: 8 }}>
-          {latestAvg != null ? latestAvg.toFixed(1) : '—'}<span className="faint" style={{ fontSize: 20 }}> kg</span>
+          {latestAvg != null ? toDisplay(latestAvg, unit) : '—'}<span className="faint" style={{ fontSize: 20 }}> {unitLabel(unit)}</span>
         </p>
         {trend != null && (
           <p className="mono faint" style={{ fontSize: 12, marginTop: 8 }}>
-            {trend >= 0 ? '+' : ''}{trend.toFixed(2)} kg/week over 21 days
+            {trend >= 0 ? '+' : ''}{toDisplay(trend, unit)} {unitLabel(unit)}/week over 21 days
           </p>
         )}
       </div>
 
       <div className="panel" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-4)' }}>
         <p className="label" style={{ marginBottom: 'var(--space-4)' }}>Today's weigh-in</p>
-        <StepperRow label="Bodyweight" hint="first thing in the morning" value={weight} onChange={setWeight} step={0.1} longPressStep={0.5} min={0} format={(v) => `${v.toFixed(1)} kg`} />
+        <StepperRow
+          label="Bodyweight" hint="first thing in the morning"
+          value={toDisplay(weight, unit) ?? 0}
+          onChange={(shown) => setWeight(fromDisplay(shown, unit))}
+          step={bwStep.bodyweight} longPressStep={bwStep.bodyweightLarge} min={0}
+          format={(v) => `${v} ${unitLabel(unit)}`}
+        />
         <Button className="btn-block" style={{ marginTop: 'var(--space-4)' }} onClick={logWeight}>
           {todayLog ? 'Update weight' : 'Log weight'}
         </Button>

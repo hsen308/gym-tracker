@@ -10,12 +10,19 @@ import { db, newId, upsertRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
 import { todayLocalDate } from '../../lib/format'
 import { SI_ROUTINE } from '../../lib/constants'
+import { useProfile } from '../../app/ProfileProvider'
 import Icon from '../../components/Icon'
 
 export default function DailyRoutine() {
   const { user } = useAuth()
   const today = todayLocalDate()
+  const { profile } = useProfile()
   const log = useLiveQuery(() => db.daily_logs.where('date').equals(today).first(), [today])
+
+  // Only for accounts whose profile flags the joint. Showing a pelvic
+  // stability routine to someone with no back problem is noise, and noise on
+  // the home screen is how people learn to ignore the whole screen.
+  if (!profile.has_si_joint) return null
 
   const done = !!log?.si_routine
 

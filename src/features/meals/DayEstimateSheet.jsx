@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Sheet from '../../components/Sheet'
 import StepperRow from '../../components/StepperRow'
 import Button from '../../components/Button'
-import { MACRO_TARGET } from '../../lib/constants'
+import { useProfile } from '../../app/ProfileProvider'
 
 // Log a whole day in one go, roughly.
 //
@@ -15,6 +15,7 @@ import { MACRO_TARGET } from '../../lib/constants'
 // Protein gets a step of 5g and calories 50 deliberately: finer granularity
 // than that is false precision on a guess.
 export default function DayEstimateSheet({ open, onClose, existing, onSave, onDelete }) {
+  const MACRO_TARGET = useProfile().profile
   const [v, setV] = useState({ calories: MACRO_TARGET.calories, protein_g: MACRO_TARGET.protein_g, carbs_g: MACRO_TARGET.carbs_g, fat_g: MACRO_TARGET.fat_g, notes: '' })
 
   // Seed from an existing estimate so reopening edits rather than restarts;
