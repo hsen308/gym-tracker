@@ -1,20 +1,14 @@
 -- ============================================================
 --  GYM TRACKER — CURRENT SCHEMA (run this one file)
 --
---  Supersedes 03, 04 and 05. Everything here is idempotent: safe to run
---  again if you've already run some of them, and safe to re-run if a
---  later step fails.
+--  Everything here is idempotent: safe to run again if you've already
+--  run it, and safe to re-run if a later step fails.
 --
 --  Paste into Supabase → SQL Editor → Run.
 -- ============================================================
 
 -- ------------------------------------------------------------
 -- 1. program_exercises — the table the original schema left behind
---
---    Every other table got created_at / updated_at / deleted_at.
---    program_exercises got none of them, so pushing a row failed with
---    "Could not find the 'created_at' column in the schema cache" and
---    the whole seeded program never reached the cloud.
 -- ------------------------------------------------------------
 alter table program_exercises add column if not exists created_at timestamptz default now();
 alter table program_exercises add column if not exists updated_at timestamptz default now();
@@ -29,36 +23,22 @@ create trigger trg_touch before update on program_exercises
 
 -- ------------------------------------------------------------
 -- 2. exercises.tracks + meal_presets.meal_type
---
---    Plank, Side Plank and Farmer's Hold are prescribed in SECONDS, not
---    weight × reps. meal_type groups the 17 meals into the program's
---    four interchangeable slots.
 -- ------------------------------------------------------------
 alter table exercises     add column if not exists tracks text not null default 'weight_reps';
 alter table meal_presets  add column if not exists meal_type text;
 
 -- ------------------------------------------------------------
 -- 3. Whole-day macro estimate
---
---    One approximate row per day plus a note of what was actually eaten,
---    for days you didn't weigh anything.
 -- ------------------------------------------------------------
 alter table meal_logs add column if not exists is_day_estimate boolean not null default false;
 alter table meal_logs add column if not exists notes text;
 
--- One estimate per day, enforced here rather than trusted to the client:
--- a second one would silently double the day's totals.
 create unique index if not exists uniq_meal_logs_day_estimate
   on meal_logs(user_id, date)
   where is_day_estimate and deleted_at is null;
 
 -- ------------------------------------------------------------
 -- 4. Coaching tables
---
---    workout_exercises — per-session, per-slot state: a substituted
---      exercise, and the traffic-light pain reading for that lift.
---    daily_logs — the habits the program prescribes outside the gym:
---      the 5-minute SI routine, steps, cardio, water.
 -- ------------------------------------------------------------
 create table if not exists workout_exercises (
   id                  uuid primary key default gen_random_uuid(),
@@ -112,9 +92,64 @@ create trigger trg_touch before update on daily_logs
   for each row execute function touch_updated_at();
 
 -- ------------------------------------------------------------
--- 5. Tell PostgREST to re-read the schema
+-- 5. profiles — what makes the app belong to ONE person
 --
---    Without this the API can keep serving a cached schema for a minute
---    or so and still report the columns above as missing.
+--    Everything personal used to be a constant in the source: the
+--    2200 kcal target, the 9000-step goal, the daily SI-joint routine,
+--    kilograms, and a single hardcoded programme. A second account got
+--    all of it whether it applied to them or not.
+--
+--    One row per user. RLS keeps them apart, same as every other table.
+-- ------------------------------------------------------------
+create table if not exists profiles (
+  id                uuid primary key default gen_random_uuid(),
+  user_id           uuid not null unique references auth.users(id) on delete cascade default auth.uid(),
+  display_name      text,
+
+  -- Which programme was seeded for this account. Adding a template is a
+  -- code change; this records which one applies.
+  program_template  text not null default 'ppl_si_recomp',
+
+  -- Display units only. Weights are ALWAYS stored in kg, and converted at
+  -- the edges — storing display units would make every historical number
+  -- ambiguous the moment someone switched.
+  unit_weight       text not null default 'kg',   -- kg | lb
+  unit_height       text not null default 'cm',   -- cm | ft
+
+  goal              text,        -- recomp | gain | lose
+  height_cm         numeric(5,1),
+  target_weight_kg  numeric(5,2),
+
+  -- Daily targets, previously hardcoded in constants.js.
+  calories          int  not null default 2200,
+  protein_g         int  not null default 170,
+  carbs_g           int  not null default 220,
+  fat_g             int  not null default 70,
+  steps_target      int  not null default 9000,
+  water_target_l    numeric(3,1) not null default 3.2,
+
+  -- Drives the daily SI routine card and the caution treatment on lifts.
+  -- Off by default: most people don't have sacroiliitis.
+  has_si_joint      boolean not null default false,
+
+  created_at        timestamptz default now(),
+  updated_at        timestamptz default now(),
+  deleted_at        timestamptz
+);
+
+create index if not exists idx_profiles_updated on profiles(user_id, updated_at desc);
+
+alter table profiles enable row level security;
+
+drop policy if exists own_rows on profiles;
+create policy own_rows on profiles
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop trigger if exists trg_touch on profiles;
+create trigger trg_touch before update on profiles
+  for each row execute function touch_updated_at();
+
+-- ------------------------------------------------------------
+-- 6. Tell PostgREST to re-read the schema
 -- ------------------------------------------------------------
 notify pgrst, 'reload schema';

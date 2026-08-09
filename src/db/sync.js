@@ -5,7 +5,7 @@
 import { db, newId } from './dexie'
 import { supabase, isSupabaseConfigured } from './supabase'
 
-const SYNCED_TABLES = ['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs', 'workout_exercises', 'daily_logs']
+const SYNCED_TABLES = ['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs', 'workout_exercises', 'daily_logs', 'profiles']
 const MAX_ATTEMPTS = 5
 
 // Drains the outbox in insertion order (`orderBy('seq')` — seq is an

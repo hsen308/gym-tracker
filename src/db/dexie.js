@@ -37,7 +37,7 @@ db.version(1).stores({
   active_rest: 'workout_id',
 })
 
-// v2 — per-slot session state and daily habits (see 04-schema-coaching.sql).
+// v2 — per-slot session state and daily habits.
 db.version(2).stores({
   // One row per (workout, programmed slot). Holds the two things that vary
   // per session without changing the program: a substituted exercise, and
@@ -47,6 +47,14 @@ db.version(2).stores({
   // One row per calendar day: the program's daily SI routine plus the habits
   // it prescribes (steps, cardio, water). Keyed by local date string.
   daily_logs: 'id, &date',
+})
+
+// v3 — profiles. One row per user holding everything that used to be a
+// constant in the source: macro targets, step/water goals, display units,
+// which programme was seeded, and whether the SI-joint material applies.
+// Without this the app only ever fits one person.
+db.version(3).stores({
+  profiles: 'id, &user_id',
 })
 
 // IDs are generated on-device, never assigned by a server — a set confirmed
@@ -77,7 +85,7 @@ export async function getLastPerformanceByExercise(exerciseId, excludeWorkoutId)
 // so "write locally + queue for Supabase" (build-plan §5) can't be
 // forgotten at a call site. Local write and outbox entry happen together;
 // the UI never waits for either — both are plain IndexedDB writes.
-const SYNCED_TABLES = new Set(['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs', 'workout_exercises', 'daily_logs'])
+const SYNCED_TABLES = new Set(['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs', 'workout_exercises', 'daily_logs', 'profiles'])
 
 async function queuePush(table, rowId) {
   if (!SYNCED_TABLES.has(table)) return // e.g. active_rest — local-only, never synced

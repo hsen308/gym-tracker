@@ -4,7 +4,7 @@
 // this is the backstop sync alone doesn't cover.
 import { db } from './dexie'
 
-const DATA_TABLES = ['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs', 'workout_exercises', 'daily_logs']
+const DATA_TABLES = ['exercises', 'program_days', 'program_exercises', 'workouts', 'sets', 'bodyweight_logs', 'measurements', 'meal_presets', 'meal_logs', 'workout_exercises', 'daily_logs', 'profiles']
 const EXPORT_VERSION = 1
 
 export async function exportAll() {
