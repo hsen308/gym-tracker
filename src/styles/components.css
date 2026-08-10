@@ -604,3 +604,30 @@
   display: grid; place-items: center;
   font-size: var(--fs-xs); color: var(--text-muted);
 }
+
+/* ---- Adherence bars ------------------------------------------------------
+   Eight weeks at a glance. Deliberately a sparkline rather than a number
+   alone: a run of short bars is a pattern you recognise instantly and can
+   argue with far less easily than "you've been inconsistent". */
+.adherence-bars {
+  display: flex; align-items: flex-end; gap: 4px;
+  height: 48px; margin-top: var(--space-4);
+}
+.adherence-bar {
+  flex: 1;
+  height: 100%;
+  background: var(--surface-high);
+  border-radius: 2px;
+  display: flex; align-items: flex-end;
+  overflow: hidden;
+}
+.adherence-bar.is-current { opacity: 0.45; }
+.adherence-fill { width: 100%; background: var(--signal); border-radius: 2px; }
+
+/* A verdict is the app telling you something, not reporting a value — so it
+   gets colour, unlike every other figure on the screen. */
+.verdict { font-size: 13px; font-weight: 600; line-height: 1.45; margin-top: var(--space-3); }
+.verdict-good      { color: var(--pr); }
+.verdict-flat      { color: var(--warn); }
+.verdict-too-fast  { color: var(--warn); }
+.verdict-wrong-way { color: var(--danger); }

@@ -142,7 +142,7 @@ export default function BodyScreen() {
       <h2 className="label section-label">Measurements</h2>
       <div className="panel" style={{ padding: 'var(--space-5)' }}>
         <div className="stack-4" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          <Field label="Waist · cm" type="number" inputMode="decimal" value={measure.waist_cm} onChange={(e) => setMeasure({ ...measure, waist_cm: e.target.value })} />
+          <Field label="Waist · cm — measure at the navel" type="number" inputMode="decimal" value={measure.waist_cm} onChange={(e) => setMeasure({ ...measure, waist_cm: e.target.value })} />
           <Field label="Chest · cm" type="number" inputMode="decimal" value={measure.chest_cm} onChange={(e) => setMeasure({ ...measure, chest_cm: e.target.value })} />
           <Field label="Arm · cm" type="number" inputMode="decimal" value={measure.arm_cm} onChange={(e) => setMeasure({ ...measure, arm_cm: e.target.value })} />
           <Field label="Thigh · cm" type="number" inputMode="decimal" value={measure.thigh_cm} onChange={(e) => setMeasure({ ...measure, thigh_cm: e.target.value })} />

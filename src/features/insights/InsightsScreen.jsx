@@ -13,6 +13,7 @@ import { programPhase, weeksToDeload } from '../../lib/phase'
 import { useProgramStart } from '../../lib/useProgramStart'
 import { MIN_SESSIONS_FOR_CORRELATION, WEEKLY_SET_BAND, DELOAD_CYCLE_WEEKS } from '../../lib/constants'
 import Icon from '../../components/Icon'
+import ProgressPanel from './ProgressPanel'
 
 export default function InsightsScreen() {
   const navigate = useNavigate()
@@ -62,6 +63,8 @@ export default function InsightsScreen() {
         <p className="empty">Log a few workouts first. These read real history — with none, they'd just be guesses.</p>
       ) : (
         <div className="stack-3">
+          <ProgressPanel />
+
           {week != null && (
             <div className="panel insight-block">
               <p className="label">Programme week</p>
