@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { format, parseISO } from 'date-fns'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, softDeleteRow } from '../../db/dexie'
 import { retrySyncErrors } from '../../db/sync'
@@ -25,7 +26,7 @@ export default function SettingsScreen() {
   const [resetOpen, setResetOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
 
-  const { save: saveProfile } = useProfile()
+  const { profile, save: saveProfile } = useProfile()
   const programStart = useProgramStart()
   const phase = programPhase(programStart)
   // Seeded from the computed week, then edited freely — showing a stepper
@@ -230,6 +231,25 @@ export default function SettingsScreen() {
                 )}
               </div>
             </>
+          )}
+        </section>
+
+        <section className="panel set-block">
+          <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Creatine</p>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.55 }}>
+            {profile.creatine_started_on
+              ? 'Started ' + format(parseISO(profile.creatine_started_on), 'd MMMM') +
+                '. For about four weeks it pulls water into muscle, so the scale reads high and the trend is paused rather than reported wrongly.'
+              : 'If you\'ve started taking it, say when. It adds 1–2 kg of muscle water over the first weeks — enough to hide real fat loss and make the app tell you a deficit isn\'t working.'}
+          </p>
+          {profile.creatine_started_on ? (
+            <Button variant="secondary" className="btn-block" onClick={() => saveProfile({ creatine_started_on: null })}>
+              Not taking it
+            </Button>
+          ) : (
+            <Button variant="secondary" className="btn-block" onClick={() => saveProfile({ creatine_started_on: todayLocalDate() })}>
+              I started creatine
+            </Button>
           )}
         </section>
 

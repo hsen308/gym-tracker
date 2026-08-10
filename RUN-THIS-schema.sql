@@ -132,6 +132,12 @@ create table if not exists profiles (
   -- Off by default: most people don't have sacroiliitis.
   has_si_joint      boolean not null default false,
 
+  -- When creatine was started, if it was. Creatine pulls 1–2 kg of water
+  -- into muscle over the first few weeks, so a scale reading during that
+  -- window is not a fat reading — and a trend calculated across it will
+  -- confidently report the opposite of what's happening.
+  creatine_started_on date,
+
   -- Which week of the block you're on, stored as the date week 1 began.
   -- Previously derived per-device from the earliest logged workout and
   -- cached in `meta`, which is local-only and never synced — so a phone

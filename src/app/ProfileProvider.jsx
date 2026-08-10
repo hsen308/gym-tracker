@@ -30,6 +30,7 @@ export const DEFAULT_PROFILE = {
   steps_target: 9000,
   water_target_l: 3.2,
   has_si_joint: false,
+  creatine_started_on: null,
   // null = fall back to the earliest logged workout. Set explicitly, it wins,
   // and because it's on the profile it agrees across devices.
   program_start_date: null,

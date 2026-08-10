@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { db } from '../../db/dexie'
 import { useProfile } from '../../app/ProfileProvider'
 import { movingAverage } from '../../lib/calc'
-import { trendPerWeek, weeksToTarget, addWeeks, rateVerdict } from '../../lib/projection'
+import { trendPerWeek, weeksToTarget, addWeeks, rateVerdict, creatineWindow } from '../../lib/projection'
 import { weeklyAdherence, overallAdherence, weekStreak } from '../../lib/adherence'
 import { toDisplay, unitLabel } from '../../lib/units'
 
@@ -48,8 +48,11 @@ export default function ProgressPanel() {
   const adherence = overallAdherence(weeks)
   const streak = weekStreak(weeks)
 
-  const verdict = rateVerdict(weightTrend, avg, profile.goal)
-  const toGoal = weeksToTarget(avg, profile.target_weight_kg, weightTrend)
+  const creatine = creatineWindow(profile.creatine_started_on)
+  const verdict = rateVerdict(weightTrend, avg, profile.goal, creatine)
+  // No projected date while the scale is measuring hydration — the arrival
+  // date would be computed from water, not fat.
+  const toGoal = creatine ? null : weeksToTarget(avg, profile.target_weight_kg, weightTrend)
 
   if (!bwLogs || !workouts) return null
 

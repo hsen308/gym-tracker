@@ -44,9 +44,31 @@ export const addWeeks = (weeks, today = new Date()) =>
 // Losing faster than ~1% of bodyweight a week costs lean mass; gaining
 // faster than ~0.5% is mostly fat. Being too fast is a real failure mode,
 // not an achievement, and nothing else in the app says so.
-export function rateVerdict(perWeek, bodyweightKg, goal) {
+// Creatine pulls water into muscle for roughly the first month. During that
+// window the scale is measuring hydration, not fat, and any trend drawn
+// across it says the opposite of what's true.
+export const CREATINE_WATER_WEEKS = 4
+
+export function creatineWindow(startedOn, today = new Date()) {
+  if (!startedOn) return null
+  const weeks = (today - new Date(startedOn)) / (7 * DAY_MS)
+  if (weeks < 0 || weeks > CREATINE_WATER_WEEKS) return null
+  return { weeksIn: Math.max(0, Math.floor(weeks)), weeksLeft: Math.ceil(CREATINE_WATER_WEEKS - weeks) }
+}
+
+export function rateVerdict(perWeek, bodyweightKg, goal, creatine = null) {
   if (perWeek == null || !bodyweightKg) return null
   const pct = (perWeek / bodyweightKg) * 100
+
+  // Refuse to judge rather than judge wrongly. Telling someone in a real
+  // deficit that they aren't in one — because creatine added 1.5 kg of
+  // muscle water — is how a working plan gets abandoned in week three.
+  if (creatine && pct > -1.1) {
+    return {
+      state: 'paused',
+      text: `Creatine is holding water for about ${creatine.weeksLeft} more week${creatine.weeksLeft === 1 ? '' : 's'}. The scale isn't readable yet — go by the waist.`,
+    }
+  }
 
   if (goal === 'lose' || goal === 'recomp') {
     if (pct > 0.15) return { state: 'wrong-way', text: 'Trending up. Not a deficit yet.' }
