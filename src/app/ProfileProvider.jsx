@@ -35,8 +35,19 @@ export const DEFAULT_PROFILE = {
 export function ProfileProvider({ children }) {
   const { user } = useAuth()
 
+  // `.first()` resolves to undefined when nothing matches — the SAME value
+  // useLiveQuery returns while the read is still in flight. Coerced to null
+  // so the two states are actually distinguishable: undefined = loading,
+  // null = loaded and this account has no profile.
+  //
+  // Without this, `loading` was permanently true for anyone without a
+  // profile, the route guard rendered nothing, and login led to a white
+  // screen with no error to explain it.
   const row = useLiveQuery(
-    () => (user ? db.profiles.where('user_id').equals(user.id).first() : undefined),
+    async () => {
+      if (!user) return null
+      return (await db.profiles.where('user_id').equals(user.id).first()) ?? null
+    },
     [user?.id],
   )
 

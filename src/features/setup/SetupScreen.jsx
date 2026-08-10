@@ -86,9 +86,11 @@ export default function SetupScreen() {
                 onClick={() => set({
                   unit_weight: u,
                   // Re-express the numbers already entered so switching units
-                  // doesn't silently reinterpret 75 kg as 75 lb.
-                  weightDisplay: toDisplay(weightKg, u),
-                  targetDisplay: toDisplay(targetKg, u),
+                  // doesn't silently reinterpret 75 kg as 75 lb. Rounded to a
+                  // whole number, because a converted default reads as
+                  // "165.3 lb" — a figure nobody would ever type.
+                  weightDisplay: Math.round(toDisplay(weightKg, u)),
+                  targetDisplay: Math.round(toDisplay(targetKg, u)),
                 })}
               >
                 <span className="choice-title">{label}</span>
