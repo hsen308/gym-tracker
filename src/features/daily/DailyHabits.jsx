@@ -66,19 +66,19 @@ export default function DailyHabits() {
   return (
     <div className="panel" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
       <StepperRow
-        label="Steps" hint={`target ${profile.steps_target.toLocaleString()}`}
+        label="Steps" hint={`${profile.steps_target.toLocaleString()} a day`}
         value={value('steps')} step={500} longPressStep={2000} min={0} max={60000}
         format={(v) => v.toLocaleString()}
         onChange={(steps) => patch({ steps })}
       />
       <StepperRow
-        label="Cardio" hint="low-intensity minutes"
+        label="Cardio" hint="low-intensity minutes today"
         value={value('cardio_minutes')} step={5} longPressStep={10} min={0} max={180}
         format={(v) => `${v} min`}
         onChange={(cardio_minutes) => patch({ cardio_minutes })}
       />
       <StepperRow
-        label="Water" hint={`target ${profile.water_target_l} L`}
+        label="Water" hint={`${profile.water_target_l} L a day`}
         value={value('water_litres')} step={0.25} longPressStep={0.5} min={0} max={8}
         format={(v) => `${v} L`}
         onChange={(water_litres) => patch({ water_litres })}
