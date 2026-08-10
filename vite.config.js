@@ -36,6 +36,11 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        // Adds our push + notificationclick handlers to the generated
+        // worker. Cheaper than switching to injectManifest, which would
+        // hand us the whole service worker to maintain including the
+        // precache logic that already works.
+        importScripts: ['/push-sw.js'],
       }
     })
   ]

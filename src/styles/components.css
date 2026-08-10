@@ -578,3 +578,29 @@
   background: var(--danger-soft); border: 1px solid var(--danger); color: var(--danger);
   border-radius: var(--radius); padding: var(--space-4); margin: 0;
 }
+
+/* ---- Barcode scanner -----------------------------------------------------
+   The camera fills a fixed window rather than growing to whatever the video
+   track happens to be, so the sheet doesn't jump when the stream starts. */
+.scanner { display: flex; flex-direction: column; }
+.scanner-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--surface-high);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.scanner-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* A window, not instructions: people line a barcode up with a box without
+   being told to. */
+.scanner-reticle {
+  position: absolute; inset: 22% 12%;
+  border: 2px solid var(--signal);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 100vmax rgba(26, 24, 21, 0.35);
+}
+.scanner-status {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: var(--fs-xs); color: var(--text-muted);
+}

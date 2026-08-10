@@ -16,6 +16,7 @@ import Button from '../../components/Button'
 import Field from '../../components/Field'
 import Icon from '../../components/Icon'
 import DayEstimateSheet from './DayEstimateSheet'
+import ScanFoodSheet from './ScanFoodSheet'
 
 export default function MealsScreen() {
   const { user } = useAuth()
@@ -33,6 +34,7 @@ export default function MealsScreen() {
   const [openMeal, setOpenMeal] = useState(null)
   const [customOpen, setCustomOpen] = useState(false)
   const [estimateOpen, setEstimateOpen] = useState(false)
+  const [scanOpen, setScanOpen] = useState(false)
   const [draft, setDraft] = useState({ name: '', calories: '', protein_g: '', carbs_g: '', fat_g: '' })
 
   if (!presets || !todayLogs) return null
@@ -173,9 +175,14 @@ export default function MealsScreen() {
         </section>
       )}
 
-      <Button variant="secondary" className="btn-block" style={{ marginTop: 'var(--space-5)' }} onClick={() => setCustomOpen(true)}>
-        <Icon name="plus" size={18} /> Custom food
-      </Button>
+      <div className="stack-2" style={{ marginTop: 'var(--space-5)' }}>
+        <Button variant="secondary" className="btn-block" onClick={() => setScanOpen(true)}>
+          <Icon name="scan" size={18} /> Scan a barcode
+        </Button>
+        <Button variant="secondary" className="btn-block" onClick={() => setCustomOpen(true)}>
+          <Icon name="plus" size={18} /> Custom food
+        </Button>
+      </div>
 
       {mealLogs.length > 0 && (
         <>
@@ -193,6 +200,11 @@ export default function MealsScreen() {
           </div>
         </>
       )}
+
+      {/* A scanned item is logged directly rather than saved as a preset —
+          you rarely eat the same packaged thing twice, and the preset list is
+          the programme's meals, not a shopping history. */}
+      <ScanFoodSheet open={scanOpen} onClose={() => setScanOpen(false)} onLog={logMeal} />
 
       <DayEstimateSheet
         open={estimateOpen}

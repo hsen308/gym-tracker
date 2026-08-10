@@ -11,6 +11,7 @@ import { useProgramStart, startDateForWeek } from '../../lib/useProgramStart'
 import { programPhase } from '../../lib/phase'
 import { DELOAD_CYCLE_WEEKS } from '../../lib/constants'
 import StepperRow from '../../components/StepperRow'
+import { pushSupported, pushConfigured, isStandalone, currentSubscription, subscribe, unsubscribe, sendTestNotification } from '../../lib/push'
 import Button from '../../components/Button'
 import Toast from '../../components/Toast'
 import Icon from '../../components/Icon'
@@ -37,6 +38,33 @@ export default function SettingsScreen() {
   const saveWeek = async () => {
     await saveProfile({ program_start_date: startDateForWeek(weekDraft) })
     setToast(`Now on week ${weekDraft}.`)
+  }
+
+  // Checked once at mount rather than watched: permission and install state
+  // only change via a browser dialog, which reloads or backgrounds the page.
+  const pushOk = { supported: pushSupported() && pushConfigured(), standalone: isStandalone() }
+  const [pushOn, setPushOn] = useState(false)
+  useEffect(() => {
+    currentSubscription().then((s) => setPushOn(!!s)).catch(() => {})
+  }, [])
+
+  const togglePush = async () => {
+    setBusy(true)
+    try {
+      if (pushOn) {
+        await unsubscribe()
+        setPushOn(false)
+        setToast('Reminders off.')
+      } else {
+        await subscribe(user.id)
+        setPushOn(true)
+        setToast('Reminders on for this device.')
+      }
+    } catch (err) {
+      setToast(err.message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   // Soft-delete rather than a hard wipe: rows keep their id with deleted_at
@@ -171,6 +199,38 @@ export default function SettingsScreen() {
             </Button>
             <input ref={fileInput} type="file" accept="application/json" hidden onChange={handleImportFile} />
           </div>
+        </section>
+
+        <section className="panel set-block">
+          <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Reminders</p>
+          {!pushOk.supported ? (
+            <p className="muted" style={{ fontSize: 13, lineHeight: 1.55 }}>
+              This browser can't do notifications.
+            </p>
+          ) : !pushOk.standalone ? (
+            <p className="muted" style={{ fontSize: 13, lineHeight: 1.55 }}>
+              Add the app to your Home Screen first — iOS only allows notifications for installed
+              web apps, not for pages open in Safari.
+            </p>
+          ) : (
+            <>
+              <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.55 }}>
+                {pushOn
+                  ? "One nudge a day, and only when it's warranted — nothing if you already trained."
+                  : 'A daily nudge if you haven\'t trained, and a reminder for the routine on rest days. Reaches you with the app closed.'}
+              </p>
+              <div className="stack-2">
+                <Button variant={pushOn ? 'secondary' : 'primary'} className="btn-block" disabled={busy} onClick={togglePush}>
+                  <Icon name="bell" size={18} /> {pushOn ? 'Turn reminders off' : 'Turn reminders on'}
+                </Button>
+                {pushOn && (
+                  <Button variant="secondary" className="btn-block" onClick={() => sendTestNotification()}>
+                    Send a test notification
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </section>
 
         <section className="panel set-block">

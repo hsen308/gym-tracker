@@ -171,6 +171,40 @@ alter table workouts add column if not exists skipped_at timestamptz;
 create index if not exists idx_workouts_skipped on workouts(user_id, skipped_at desc);
 
 -- ------------------------------------------------------------
--- 7. Tell PostgREST to re-read the schema
+-- 7. push_subscriptions — one row per installed device
+--
+--    A browser hands you an endpoint URL plus two keys; that triple IS
+--    the subscription. Storing them server-side is what lets a reminder
+--    reach a phone whose app is closed, which is the whole point.
+--
+--    Not synced through the normal engine: a subscription belongs to one
+--    physical device, so copying it between devices would be wrong.
+-- ------------------------------------------------------------
+create table if not exists push_subscriptions (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  endpoint    text not null unique,
+  p256dh      text not null,
+  auth        text not null,
+  user_agent  text,
+  last_sent_at timestamptz,
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
+);
+
+create index if not exists idx_push_subs_user on push_subscriptions(user_id);
+
+alter table push_subscriptions enable row level security;
+
+drop policy if exists own_rows on push_subscriptions;
+create policy own_rows on push_subscriptions
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop trigger if exists trg_touch on push_subscriptions;
+create trigger trg_touch before update on push_subscriptions
+  for each row execute function touch_updated_at();
+
+-- ------------------------------------------------------------
+-- 8. Tell PostgREST to re-read the schema
 -- ------------------------------------------------------------
 notify pgrst, 'reload schema';
