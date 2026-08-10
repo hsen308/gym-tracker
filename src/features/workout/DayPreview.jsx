@@ -69,6 +69,25 @@ export default function DayPreview() {
     navigate(`/workout/${workout.id}`)
   }
 
+  // Records the miss without opening a session. Skipping used to mean either
+  // starting a workout and abandoning it — which is where the empty sessions
+  // came from — or logging nothing at all, which quietly overstates adherence.
+  const markSkipped = async () => {
+    const now = new Date().toISOString()
+    await upsertRow('workouts', {
+      id: newId(),
+      user_id: user.id,
+      program_day_id: day.id,
+      date: todayLocalDate(),
+      started_at: now,
+      finished_at: null,
+      skipped_at: now,
+      bodyweight_kg: null, si_pain_score: null, energy: null, sleep_hours: null, notes: null,
+      created_at: now, updated_at: now, deleted_at: null,
+    })
+    navigate('/')
+  }
+
   const resumeThisDay = unfinished?.program_day_id === day.id ? unfinished : null
 
   return (
@@ -134,9 +153,14 @@ export default function DayPreview() {
         ) : (
           <>
             <Button className="btn-block" onClick={() => startSession({})}>Start session now</Button>
-            <button className="link-action pressable" onClick={() => setStartOpen(true)}>
-              <Icon name="timer" size={15} /> Log a session I already did
-            </button>
+            <div className="preview-secondary">
+              <button className="link-action pressable" onClick={() => setStartOpen(true)}>
+                <Icon name="timer" size={15} /> Log one I already did
+              </button>
+              <button className="link-action pressable" onClick={markSkipped}>
+                Mark skipped
+              </button>
+            </div>
           </>
         )}
       </div>

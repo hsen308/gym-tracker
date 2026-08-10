@@ -242,6 +242,9 @@
 .preview-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-weight: 500; }
 .preview-target { display: block; font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 
+.preview-secondary { display: flex; gap: var(--space-3); margin-top: var(--space-1); }
+.preview-secondary .link-action { flex: 1; }
+
 /* Sticky so Start is reachable without scrolling back up a long session. */
 .sticky-action {
   position: fixed;

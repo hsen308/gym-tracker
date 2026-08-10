@@ -19,10 +19,16 @@ export default function TodayScreen() {
   const navigate = useNavigate()
 
   const days = useLiveQuery(() => db.program_days.orderBy('order_index').toArray(), [])
-  const unfinished = useLiveQuery(() => db.workouts.filter((w) => !w.finished_at && !w.deleted_at).first(), [])
+  const unfinished = useLiveQuery(
+    () => db.workouts.filter((w) => !w.finished_at && !w.skipped_at && !w.deleted_at).first(),
+    [],
+  )
   const lastFinished = useLiveQuery(async () => {
-    const all = await db.workouts.filter((w) => !!w.finished_at && !w.deleted_at).toArray()
-    all.sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
+    const all = await db.workouts
+      .filter((w) => (!!w.finished_at || !!w.skipped_at) && !w.deleted_at)
+      .toArray()
+    const at = (w) => w.finished_at ?? w.skipped_at
+    all.sort((a, b) => new Date(at(b)) - new Date(at(a)))
     return all[0]
   }, [])
   const exerciseCounts = useLiveQuery(async () => {

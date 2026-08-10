@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, softDeleteRow } from '../../db/dexie'
 import { retrySyncErrors } from '../../db/sync'
@@ -6,6 +6,11 @@ import Sheet from '../../components/Sheet'
 import { downloadExport, importAll, readFileAsJson } from '../../db/export'
 import { useAuth } from '../../app/AuthProvider'
 import { useSync } from '../../app/SyncProvider'
+import { useProfile } from '../../app/ProfileProvider'
+import { useProgramStart, startDateForWeek } from '../../lib/useProgramStart'
+import { programPhase } from '../../lib/phase'
+import { DELOAD_CYCLE_WEEKS } from '../../lib/constants'
+import StepperRow from '../../components/StepperRow'
 import Button from '../../components/Button'
 import Toast from '../../components/Toast'
 import Icon from '../../components/Icon'
@@ -19,6 +24,21 @@ export default function SettingsScreen() {
   const [resetOpen, setResetOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
 
+  const { save: saveProfile } = useProfile()
+  const programStart = useProgramStart()
+  const phase = programPhase(programStart)
+  // Seeded from the computed week, then edited freely — showing a stepper
+  // that snaps back to the derived value on every render would be unusable.
+  const [weekDraft, setWeekDraft] = useState(null)
+  useEffect(() => {
+    if (weekDraft === null && phase?.week) setWeekDraft(phase.week)
+  }, [phase?.week, weekDraft])
+
+  const saveWeek = async () => {
+    await saveProfile({ program_start_date: startDateForWeek(weekDraft) })
+    setToast(`Now on week ${weekDraft}.`)
+  }
+
   // Soft-delete rather than a hard wipe: rows keep their id with deleted_at
   // set, so the deletion itself has something to push. Hard-deleting locally
   // would leave the cloud copy alive and sync would pull it straight back.
@@ -28,9 +48,12 @@ export default function SettingsScreen() {
       const rows = await db[table].filter((r) => !r.deleted_at).toArray()
       for (const row of rows) await softDeleteRow(table, row.id)
     }
-    // The program start date is derived from the earliest workout; with none
-    // left it must be re-derived, or week counting stays stuck on the old one.
-    await db.meta.delete('program_started_at')
+    // Week counting falls back to the earliest workout; with none left, an
+    // explicit start date would keep the count frozen on a block that no
+    // longer has any sessions in it.
+    await db.meta.delete('program_started_at') // legacy key from before this moved to the profile
+    await saveProfile({ program_start_date: null })
+    setWeekDraft(1)
     setResetOpen(false)
     setConfirmText('')
     setToast('All logged sessions cleared.')
@@ -148,6 +171,29 @@ export default function SettingsScreen() {
             </Button>
             <input ref={fileInput} type="file" accept="application/json" hidden onChange={handleImportFile} />
           </div>
+        </section>
+
+        <section className="panel set-block">
+          <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Programme week</p>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.55 }}>
+            {phase?.kind === 'deload'
+              ? 'Deload week — half the sets, about 60% of the weight.'
+              : phase?.kind === 'return'
+                ? phase.note
+                : `Week ${phase?.week ?? 1} of a ${DELOAD_CYCLE_WEEKS}-week block.`}
+            {' '}Drives the load and set adjustments, and it syncs, so both devices agree.
+          </p>
+          <StepperRow
+            label="Current week" hint={`deload every ${DELOAD_CYCLE_WEEKS}th`}
+            value={weekDraft} onChange={setWeekDraft}
+            step={1} min={1} max={52}
+            format={(n) => `Week ${n}`}
+          />
+          {weekDraft !== (phase?.week ?? 1) && (
+            <Button className="btn-block" style={{ marginTop: 'var(--space-4)' }} onClick={saveWeek}>
+              Set to week {weekDraft}
+            </Button>
+          )}
         </section>
 
         <section className="panel set-block">

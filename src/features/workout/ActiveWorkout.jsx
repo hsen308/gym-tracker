@@ -56,6 +56,11 @@ export default function ActiveWorkout() {
   const [finishOpen, setFinishOpen] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
 
+  // Reopening a finished session turns this screen into an editor: same
+  // logging UI, but no wake lock, no rest timers, and the footer saves rather
+  // than finishes. Building a separate read-only editor would have meant two
+  // implementations of every stepper and swap control.
+  const isEditing = !!workout?.finished_at
   const elapsed = useElapsedSeconds(workout?.started_at)
   const programStart = useProgramStart()
   const phase = useMemo(() => programPhase(programStart), [programStart])
@@ -63,6 +68,7 @@ export default function ActiveWorkout() {
   // Keeps the screen awake for the session. Feature-detected because it
   // doesn't exist on iOS Safari (build-plan §9) — fails silently there.
   useEffect(() => {
+    if (isEditing) return // nothing to keep awake; you're at a desk
     let lock = null
     let cancelled = false
     navigator.wakeLock?.request('screen').then((l) => {
@@ -70,7 +76,7 @@ export default function ActiveWorkout() {
       else lock = l
     }).catch(() => {})
     return () => { cancelled = true; lock?.release?.().catch(() => {}) }
-  }, [])
+  }, [isEditing])
 
   // Bail out until every piece of state has resolved once — Dexie reads are
   // async, so on first paint these are all `undefined`. Rendering early with
@@ -123,7 +129,7 @@ export default function ActiveWorkout() {
     })
     // Warm-up sets don't start a rest timer — the whole point of a ramp is to
     // move through it, and a 3-minute countdown after an empty-bar set is noise.
-    if (draft.is_warmup) return
+    if (draft.is_warmup || isEditing) return
     await db.active_rest.put({
       workout_id: workoutId,
       exercise_id: exercise.id,
@@ -194,7 +200,10 @@ export default function ActiveWorkout() {
           <Icon name="back" size={20} />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>{day?.name ?? '…'}</p>
+          <p style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>
+            {day?.name ?? '…'}
+            {isEditing && <span className="tag tag-swap" style={{ marginLeft: 8 }}>EDITING</span>}
+          </p>
           {/* The clock is a button: if you started the session late, or are
               typing it up hours afterwards, this is where you correct it. */}
           <button className="workout-clock pressable" onClick={() => setTimeOpen(true)}>
@@ -248,9 +257,15 @@ export default function ActiveWorkout() {
           })}
         </div>
 
-        <Button variant="secondary" className="btn-block" style={{ marginTop: 'var(--space-6)' }} onClick={() => setFinishOpen(true)}>
-          Finish workout
-        </Button>
+        {isEditing ? (
+          <Button className="btn-block" style={{ marginTop: 'var(--space-6)' }} onClick={() => navigate(`/history/${workoutId}`)}>
+            Done editing
+          </Button>
+        ) : (
+          <Button variant="secondary" className="btn-block" style={{ marginTop: 'var(--space-6)' }} onClick={() => setFinishOpen(true)}>
+            Finish workout
+          </Button>
+        )}
       </div>
 
       {activeRest && (

@@ -132,6 +132,13 @@ create table if not exists profiles (
   -- Off by default: most people don't have sacroiliitis.
   has_si_joint      boolean not null default false,
 
+  -- Which week of the block you're on, stored as the date week 1 began.
+  -- Previously derived per-device from the earliest logged workout and
+  -- cached in `meta`, which is local-only and never synced — so a phone
+  -- and a laptop with different history each computed a different week and
+  -- neither could be corrected. A date on the synced profile fixes both.
+  program_start_date date,
+
   created_at        timestamptz default now(),
   updated_at        timestamptz default now(),
   deleted_at        timestamptz
@@ -150,6 +157,20 @@ create trigger trg_touch before update on profiles
   for each row execute function touch_updated_at();
 
 -- ------------------------------------------------------------
--- 6. Tell PostgREST to re-read the schema
+-- 6. workouts.skipped_at — a missed session is not a deleted one
+--
+--    Deleting a session you didn't do erases the fact that it was
+--    scheduled. Marking it skipped keeps the record, which is the only
+--    way adherence over a block means anything. A workout is now:
+--      in progress  finished_at null, skipped_at null
+--      completed    finished_at set
+--      skipped      skipped_at set
+-- ------------------------------------------------------------
+alter table workouts add column if not exists skipped_at timestamptz;
+
+create index if not exists idx_workouts_skipped on workouts(user_id, skipped_at desc);
+
+-- ------------------------------------------------------------
+-- 7. Tell PostgREST to re-read the schema
 -- ------------------------------------------------------------
 notify pgrst, 'reload schema';
