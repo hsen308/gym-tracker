@@ -43,5 +43,23 @@ export const SI_ROUTINE = [
 // Program Part Four practical rules — the daily targets worth a readout.
 export const DAILY_TARGETS = { steps: 9000, water_litres: 3.2, sleep_hours: 8 }
 
+// Where it hurts the morning after. Muscle groups and joints deliberately in
+// one list: the useful signal is often that a JOINT is sore while the muscle
+// around it isn't, which is the distinction between training and damage.
+export const SORE_AREAS = [
+  { key: 'quads', label: 'Quads' },
+  { key: 'hamstrings', label: 'Hamstrings' },
+  { key: 'glutes', label: 'Glutes' },
+  { key: 'calves', label: 'Calves' },
+  { key: 'chest', label: 'Chest' },
+  { key: 'back', label: 'Back' },
+  { key: 'shoulders', label: 'Shoulders' },
+  { key: 'arms', label: 'Arms' },
+  { key: 'si_joint', label: 'SI joint' },
+  { key: 'lower_back', label: 'Lower back' },
+  { key: 'knees', label: 'Knees' },
+  { key: 'elbows', label: 'Elbows' },
+]
+
 // Program's weekly volume guidance, and the evidence-supported band it cites.
 export const WEEKLY_SET_BAND = { min: 10, max: 20 }

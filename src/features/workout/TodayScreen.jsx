@@ -12,6 +12,7 @@ import OfflineBadge from '../../components/OfflineBadge'
 import Icon from '../../components/Icon'
 import InstallPrompt from '../../components/InstallPrompt'
 import DailyRoutine from '../daily/DailyRoutine'
+import MorningCheck from '../daily/MorningCheck'
 import { programPhase, weeksToDeload } from '../../lib/phase'
 import { useProgramStart } from '../../lib/useProgramStart'
 
@@ -59,6 +60,8 @@ export default function TodayScreen() {
       </header>
 
       <InstallPrompt />
+
+      <MorningCheck />
 
       {featured ? (
         <div className="panel next-card">

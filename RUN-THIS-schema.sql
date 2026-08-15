@@ -183,6 +183,25 @@ alter table workouts add column if not exists skipped_at timestamptz;
 create index if not exists idx_workouts_skipped on workouts(user_id, skipped_at desc);
 
 -- ------------------------------------------------------------
+-- 6b. Morning-after check
+--
+--     The programme's RED flag is "pain lingering into the next day", and
+--     nothing in the app could see it: pain was only ever recorded at the
+--     END of a session. Next-morning soreness is also the only way to tell
+--     ordinary DOMS from a joint that's actually being irritated — they
+--     feel similar at the time and completely different the next day.
+-- ------------------------------------------------------------
+alter table daily_logs add column if not exists morning_si_pain int;      -- 0-10, the joint specifically
+alter table daily_logs add column if not exists morning_soreness int;     -- 0-5, general muscle DOMS
+alter table daily_logs add column if not exists sore_areas text[];        -- quads, hamstrings, si_joint, ...
+alter table daily_logs add column if not exists morning_note text;        -- what he thinks caused it
+
+-- Bodyweight readings taken at different times of day are not comparable:
+-- evening-after-a-meal reads 1-1.5 kg above morning-fasted. Recording the
+-- condition means a trend can at least warn when it's mixing them.
+alter table bodyweight_logs add column if not exists measured_at text;    -- morning_fasted | evening_fed | other
+
+-- ------------------------------------------------------------
 -- 7. push_subscriptions — one row per installed device
 --
 --    A browser hands you an endpoint URL plus two keys; that triple IS

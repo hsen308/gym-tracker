@@ -631,3 +631,24 @@
 .verdict-flat      { color: var(--warn); }
 .verdict-too-fast  { color: var(--warn); }
 .verdict-wrong-way { color: var(--danger); }
+
+/* ---- Morning check --------------------------------------------------------
+   Sits at the top of Today because next-day pain is only actionable BEFORE
+   you train again. Goes red at the programme's own threshold rather than
+   just displaying a number. */
+.morning-card { display: block; width: 100%; text-align: left; padding: var(--space-4); margin-bottom: var(--space-4); }
+.morning-card.is-red { background: var(--danger-soft); border-color: var(--danger); }
+.morning-summary { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.5; margin-top: var(--space-2); }
+.morning-note { font-size: var(--fs-xs); color: var(--text); line-height: 1.5; margin-top: var(--space-2); font-style: italic; }
+.morning-red { font-size: var(--fs-xs); color: var(--danger); font-weight: 600; line-height: 1.5; margin-top: var(--space-3); }
+
+.area-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.area-chip {
+  font-size: var(--fs-xs); font-weight: 500;
+  padding: 9px 12px; min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+.area-chip.is-active { background: var(--signal-soft); border-color: var(--signal); color: var(--signal); font-weight: 600; }

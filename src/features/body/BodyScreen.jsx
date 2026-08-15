@@ -33,11 +33,19 @@ export default function BodyScreen() {
   // 0 — an earlier version used `draft || fallback`, which made zero fall
   // back to the previous weight and appear to be a stuck stepper.
   const [weight, setWeight] = useState(null)
+  // Remembered between weigh-ins: whatever conditions you use, you'll almost
+  // always use the same ones, and re-picking it daily is friction for nothing.
+  const [measuredAt, setMeasuredAt] = useState('morning_fasted')
   const [measure, setMeasure] = useState(BLANK_MEASURE)
   const [toast, setToast] = useState('')
 
   // Seeds from today's entry, else the most recent one, else a sane default —
   // never 0, which would mean twenty taps to get back to a real bodyweight.
+  useEffect(() => {
+    const last = logs?.[logs.length - 1]
+    if (last?.measured_at) setMeasuredAt(last.measured_at)
+  }, [logs?.length])
+
   useEffect(() => {
     if (weight !== null || !logs) return
     // Last entry, else the target they set at setup, else a neutral 70 kg —
@@ -70,6 +78,7 @@ export default function BodyScreen() {
       user_id: user.id,
       date: today,
       weight_kg: weight,
+      measured_at: measuredAt,
       updated_at: new Date().toISOString(),
       deleted_at: null,
     })
@@ -123,6 +132,16 @@ export default function BodyScreen() {
           step={bwStep.bodyweight} longPressStep={bwStep.bodyweightLarge} min={0}
           format={(v) => `${v} ${unitLabel(unit)}`}
         />
+        <div className="area-grid" style={{ marginTop: 'var(--space-4)' }}>
+          {[['morning_fasted', 'Morning, fasted'], ['evening_fed', 'Evening, after eating'], ['other', 'Other']].map(([k, label]) => (
+            <button key={k} className={`area-chip ${measuredAt === k ? 'is-active' : ''}`} onClick={() => setMeasuredAt(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="field-hint" style={{ marginTop: 'var(--space-2)' }}>
+          Evening-after-eating reads about 1&ndash;1.5&nbsp;kg above morning-fasted. Either is fine &mdash; mixing them isn't.
+        </p>
         <Button className="btn-block" style={{ marginTop: 'var(--space-4)' }} onClick={logWeight}>
           {todayLog ? 'Update weight' : 'Log weight'}
         </Button>
