@@ -138,6 +138,12 @@ create table if not exists profiles (
   -- confidently report the opposite of what's happening.
   creatine_started_on date,
 
+  -- How many sessions a week are actually achievable, which is not the same
+  -- as how many the programme contains. Measuring adherence against the
+  -- programme's day count punishes someone whose gym shuts on Sundays for a
+  -- session they were never able to train.
+  sessions_per_week int,
+
   -- Which week of the block you're on, stored as the date week 1 began.
   -- Previously derived per-device from the earliest logged workout and
   -- cached in `meta`, which is local-only and never synced — so a phone

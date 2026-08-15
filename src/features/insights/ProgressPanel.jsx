@@ -41,9 +41,12 @@ export default function ProgressPanel() {
     return m.length ? m[m.length - 1].avg : null
   }, [weightPoints])
 
+  // Against what's actually achievable, not what the programme contains —
+  // a gym that shuts on Sundays shouldn't show up as 17% non-compliance.
+  const target = profile.sessions_per_week ?? days ?? 0
   const weeks = useMemo(
-    () => weeklyAdherence(workouts ?? [], days ?? 0),
-    [workouts, days],
+    () => weeklyAdherence(workouts ?? [], target),
+    [workouts, target],
   )
   const adherence = overallAdherence(weeks)
   const streak = weekStreak(weeks)

@@ -31,6 +31,8 @@ export const DEFAULT_PROFILE = {
   water_target_l: 3.2,
   has_si_joint: false,
   creatine_started_on: null,
+  // null = fall back to the programme's day count.
+  sessions_per_week: null,
   // null = fall back to the earliest logged workout. Set explicitly, it wins,
   // and because it's on the profile it agrees across devices.
   program_start_date: null,

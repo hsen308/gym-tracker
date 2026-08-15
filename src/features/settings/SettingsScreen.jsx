@@ -32,6 +32,7 @@ export default function SettingsScreen() {
   // Seeded from the computed week, then edited freely — showing a stepper
   // that snaps back to the derived value on every render would be unusable.
   const [weekDraft, setWeekDraft] = useState(null)
+  const [sessionsDraft, setSessionsDraft] = useState(profile.sessions_per_week ?? 6)
   useEffect(() => {
     if (weekDraft === null && phase?.week) setWeekDraft(phase.week)
   }, [phase?.week, weekDraft])
@@ -231,6 +232,27 @@ export default function SettingsScreen() {
                 )}
               </div>
             </>
+          )}
+        </section>
+
+        <section className="panel set-block">
+          <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Sessions a week</p>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.55 }}>
+            What you can realistically train, which isn't always what the programme contains.
+            Consistency is scored against this — a gym that shuts on Sundays shouldn't read as
+            you missing sessions.
+          </p>
+          <StepperRow
+            label="Realistic sessions" hint="per week"
+            value={sessionsDraft} onChange={setSessionsDraft}
+            step={1} min={1} max={7}
+            format={(n) => `${n} a week`}
+          />
+          {sessionsDraft !== (profile.sessions_per_week ?? 6) && (
+            <Button className="btn-block" style={{ marginTop: 'var(--space-4)' }}
+              onClick={() => { saveProfile({ sessions_per_week: sessionsDraft }); setToast(`Scoring against ${sessionsDraft} a week.`) }}>
+              Save
+            </Button>
           )}
         </section>
 
