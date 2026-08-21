@@ -25,11 +25,15 @@ export default function ExercisePanel({
   // Weeks 1–3 and deload weeks change how many sets today actually calls for.
   const targetSets = adjustedSets(programExercise?.target_sets ?? 3, phase, isCompound)
 
-  const working = confirmedSets.filter((s) => !s.is_warmup)
+  // A drop continues the set before it — counting it separately would
+  // report 5 sets when the programme asked for 3.
+  const working = confirmedSets.filter((s) => !s.is_warmup && !s.is_drop_set)
+  const drops = confirmedSets.filter((s) => s.is_drop_set)
   const warmups = confirmedSets.filter((s) => s.is_warmup)
   const nextSetNumber = working.length + 1
 
   const [editingSet, setEditingSet] = useState(null)
+  const [dropFor, setDropFor] = useState(null)
   const [editDraft, setEditDraft] = useState(null)
 
   const lastPerformance = useLiveQuery(
@@ -113,6 +117,18 @@ export default function ExercisePanel({
     ramp.forEach((step, i) => onConfirmSet({ ...step, rir: null, is_warmup: true, set_number: i + 1 }))
   }
 
+  // Opens the editor pre-filled at ~75% of the set you just did, rather than
+  // logging a guess you'd then have to correct. Carries the parent's set
+  // number, because a drop belongs to that set rather than being a new one.
+  const addDrop = (parent) => {
+    setDropFor(parent)
+    setEditDraft({
+      weight_kg: Math.max(0, Math.round(((parent.weight_kg ?? 0) * 0.75) / 2.5) * 2.5),
+      reps: parent.reps ?? 8,
+      rir: 0, // a drop is taken to or near failure — that's the point of it
+    })
+  }
+
   // The draft must carry ONLY the fields this exercise actually tracks.
   // Including `duration_seconds: 0` on a weight-based set made the saved row
   // read as a timed hold — SetRow treats "duration is not null" as the
@@ -176,13 +192,22 @@ export default function ExercisePanel({
             <SetRow key={s.id} setNumber={s.set_number} confirmedSet={s} isWarmup onEdit={() => openEdit(s)} />
           ))}
           {working.map((s) => (
-            <SetRow
-              key={s.id}
-              setNumber={s.set_number}
-              confirmedSet={s}
-              isPR={historicalSets ? isPR(s, historicalSets) : false}
-              onEdit={() => openEdit(s)}
-            />
+            <div key={s.id}>
+              <SetRow
+                setNumber={s.set_number}
+                confirmedSet={s}
+                isPR={historicalSets ? isPR(s, historicalSets) : false}
+                onEdit={() => openEdit(s)}
+              />
+              {drops.filter((dp) => dp.set_number === s.set_number).map((dp) => (
+                <SetRow key={dp.id} setNumber={dp.set_number} confirmedSet={dp} isDrop onEdit={() => openEdit(dp)} />
+              ))}
+              {!isDuration && (
+                <button className="add-drop pressable" onClick={() => addDrop(s)}>
+                  + drop set
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -208,6 +233,29 @@ export default function ExercisePanel({
       {exercise.si_risk === 'caution' && (
         <PainControl value={painLevel} onChange={onPainChange} />
       )}
+
+      <Sheet open={!!dropFor} onClose={() => setDropFor(null)}>
+        {dropFor && editDraft && (
+          <>
+            <h2 className="sheet-title">Drop set · after set {dropFor.set_number}</h2>
+            <p className="sheet-sub">
+              Straight after the set above, no rest. Counts toward volume but not as another
+              working set — three sets with two drops is still three sets.
+            </p>
+            <SetEditor
+              draft={editDraft}
+              onChange={setEditDraft}
+              exercise={exercise}
+              programExercise={programExercise}
+              submitLabel="Log drop"
+              onSubmit={() => {
+                onConfirmSet({ ...editDraft, is_drop_set: true, set_number: dropFor.set_number })
+                setDropFor(null)
+              }}
+            />
+          </>
+        )}
+      </Sheet>
 
       <Sheet open={!!editingSet} onClose={() => setEditingSet(null)}>
         {editingSet && editDraft && (

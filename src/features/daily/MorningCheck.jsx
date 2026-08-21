@@ -28,7 +28,14 @@ export default function MorningCheck() {
   const { profile } = useProfile()
   const today = todayLocalDate()
 
-  const log = useLiveQuery(() => db.daily_logs.where('date').equals(today).first(), [today])
+  const log = useLiveQuery(
+    // `.first()` resolves to undefined when nothing matches — the SAME value
+    // useLiveQuery returns while the read is in flight. Coerced to null so
+    // "loading" and "no entry today" are distinguishable; without it the
+    // guard below is permanently true and this never renders at all.
+    async () => (await db.daily_logs.where('date').equals(today).first()) ?? null,
+    [today],
+  )
   const trainedYesterday = useLiveQuery(async () => {
     const y = new Date()
     y.setDate(y.getDate() - 1)

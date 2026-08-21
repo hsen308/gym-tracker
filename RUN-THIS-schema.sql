@@ -202,6 +202,17 @@ alter table daily_logs add column if not exists morning_note text;        -- wha
 alter table bodyweight_logs add column if not exists measured_at text;    -- morning_fasted | evening_fed | other
 
 -- ------------------------------------------------------------
+-- 6c. Drop sets
+--
+--     A drop is a CONTINUATION of the set before it, not a new working
+--     set: same set_number, lower load, taken straight after with no rest.
+--     Flagging it keeps the working-set count honest (three sets with two
+--     drops is still three sets, not five) while the volume still lands in
+--     the totals, which is what the research equates them on.
+-- ------------------------------------------------------------
+alter table sets add column if not exists is_drop_set boolean not null default false;
+
+-- ------------------------------------------------------------
 -- 7. push_subscriptions — one row per installed device
 --
 --    A browser hands you an endpoint URL plus two keys; that triple IS

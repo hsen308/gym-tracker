@@ -19,7 +19,13 @@ export default function InstallPrompt() {
   // Chrome/Android hands us the real install event; iOS Safari has no such
   // API, so there we fall back to telling the user which buttons to press.
   const [deferred, setDeferred] = useState(null)
-  const dismissed = useLiveQuery(() => db.meta.get('install_prompt_dismissed'), [])
+  // db.meta.get() resolves to undefined for a missing key — the same value
+  // useLiveQuery returns mid-read. Coerced, or the guard below is always true
+  // and the prompt never appears at all.
+  const dismissed = useLiveQuery(
+    async () => (await db.meta.get('install_prompt_dismissed')) ?? null,
+    [],
+  )
 
   useEffect(() => {
     const onPrompt = (e) => {

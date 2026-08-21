@@ -5,13 +5,13 @@ import { useUnit } from '../../app/ProfileProvider'
 // Tapping opens the editor (ExercisePanel owns that sheet) — the previous
 // build only offered hold-to-delete, which is the wrong tool for the common
 // case of "I typed 7 instead of 8".
-export default function SetRow({ setNumber, confirmedSet, isPR, isWarmup, onEdit }) {
+export default function SetRow({ setNumber, confirmedSet, isPR, isWarmup, isDrop, onEdit }) {
   const unit = useUnit()
   const isDuration = confirmedSet.duration_seconds != null
 
   return (
-    <button className={`set-done pressable ${isWarmup ? 'is-warmup' : ''}`} onClick={onEdit}>
-      <span className="set-row-index">{isWarmup ? 'W' : String(setNumber).padStart(2, '0')}</span>
+    <button className={`set-done pressable ${isWarmup ? 'is-warmup' : ''} ${isDrop ? 'is-drop' : ''}`} onClick={onEdit}>
+      <span className="set-row-index">{isDrop ? '↳' : isWarmup ? 'W' : String(setNumber).padStart(2, '0')}</span>
       <span className="set-done-load">
         {isDuration
           ? `${confirmedSet.duration_seconds}s`

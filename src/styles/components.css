@@ -652,3 +652,14 @@
   color: var(--text-muted);
 }
 .area-chip.is-active { background: var(--signal-soft); border-color: var(--signal); color: var(--signal); font-weight: 600; }
+
+/* ---- Drop sets -----------------------------------------------------------
+   Indented under the set they continue, because that's what they are. */
+.set-done.is-drop { padding-left: var(--space-6); color: var(--text-muted); }
+.set-done.is-drop .set-done-load { font-size: var(--fs-xs); }
+.add-drop {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--signal);
+  padding: 6px 0 6px var(--space-6);
+  min-height: 32px;
+}

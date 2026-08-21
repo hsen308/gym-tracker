@@ -101,13 +101,14 @@ export default function ActiveWorkout() {
   // reopen every exercise by hand as you work down the list.
   const firstIncomplete = programExercises.find((pe) => {
     const ex = resolveExercise(pe)
-    const done = (setsByExercise[ex?.id] ?? []).filter((s) => !s.is_warmup).length
+    const done = (setsByExercise[ex?.id] ?? []).filter((s) => !s.is_warmup && !s.is_drop_set).length
     return done < pe.target_sets
   })
   const expanded = expandedId ?? firstIncomplete?.id ?? programExercises[0]?.id ?? null
 
   const totalTarget = programExercises.reduce((n, pe) => n + pe.target_sets, 0)
-  const workingDone = sets.filter((s) => !s.is_warmup).length
+  // Drops and warm-ups both excluded: the header count is working sets.
+  const workingDone = sets.filter((s) => !s.is_warmup && !s.is_drop_set).length
 
   const confirmSet = async (programExercise, exercise, draft) => {
     const now = new Date().toISOString()
@@ -122,6 +123,7 @@ export default function ActiveWorkout() {
       reps: draft.reps ?? null,
       rir: draft.rir ?? null,
       is_warmup: draft.is_warmup ?? false,
+      is_drop_set: draft.is_drop_set ?? false,
       duration_seconds: draft.duration_seconds ?? null,
       completed_at: now,
       updated_at: now,
@@ -129,7 +131,9 @@ export default function ActiveWorkout() {
     })
     // Warm-up sets don't start a rest timer — the whole point of a ramp is to
     // move through it, and a 3-minute countdown after an empty-bar set is noise.
-    if (draft.is_warmup || isEditing) return
+    // A drop is taken immediately after the set it follows — a rest
+    // countdown is the opposite of the technique.
+    if (draft.is_warmup || draft.is_drop_set || isEditing) return
     await db.active_rest.put({
       workout_id: workoutId,
       exercise_id: exercise.id,
