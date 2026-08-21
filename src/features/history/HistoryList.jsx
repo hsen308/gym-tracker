@@ -17,8 +17,9 @@ export default function HistoryList() {
   // day rotation forever.
   const workouts = useLiveQuery(async () => {
     const all = await db.workouts.filter((w) => !w.deleted_at).toArray()
-    const at = (w) => w.finished_at ?? w.skipped_at ?? w.started_at
-    all.sort((a, b) => new Date(at(b)) - new Date(at(a)))
+    // By training day, not by when it was typed up — a session logged three
+    // days late belongs where it happened, not at the top of the list.
+    all.sort((a, b) => (b.date.localeCompare(a.date)) || (new Date(b.updated_at ?? 0) - new Date(a.updated_at ?? 0)))
     return all
   }, [])
   const days = useLiveQuery(() => db.program_days.toArray(), [])

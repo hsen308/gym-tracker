@@ -28,8 +28,11 @@ export default function TodayScreen() {
     const all = await db.workouts
       .filter((w) => (!!w.finished_at || !!w.skipped_at) && !w.deleted_at)
       .toArray()
-    const at = (w) => w.finished_at ?? w.skipped_at
-    all.sort((a, b) => new Date(at(b)) - new Date(at(a)))
+    // Ordered by the day you TRAINED, not the moment you pressed finish.
+    // Logging a missed session retroactively stamps finished_at with today,
+    // which made a week-old workout sort as the most recent one — and this
+    // ordering picks the next day in the rotation.
+    all.sort((a, b) => (b.date.localeCompare(a.date)) || (new Date(b.updated_at ?? 0) - new Date(a.updated_at ?? 0)))
     return all[0]
   }, [])
   const exerciseCounts = useLiveQuery(async () => {

@@ -9,6 +9,7 @@
 // otherwise would produce a rest alert that shows up tomorrow morning.
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
+import { buildMessage } from './_messages.js'
 
 const {
   VAPID_PUBLIC_KEY,
@@ -39,58 +40,33 @@ export default async function handler(req, res) {
     auth: { persistSession: false },
   })
 
-  const [{ data: subs }, { data: workouts }, { data: dailyLogs }, { data: profiles }] = await Promise.all([
-    supabase.from('push_subscriptions').select('*'),
-    supabase.from('workouts').select('user_id, date, finished_at, skipped_at, deleted_at'),
-    supabase.from('daily_logs').select('user_id, date, si_routine, deleted_at'),
-    supabase.from('profiles').select('user_id, display_name, has_si_joint, deleted_at'),
+  const [subs, workouts, sets, bodyweight, measurements, dailyLogs, profiles] = await Promise.all([
+    supabase.from('push_subscriptions').select('*').then((r) => r.data ?? []),
+    supabase.from('workouts').select('id, user_id, date, finished_at, skipped_at, si_pain_score, deleted_at').then((r) => r.data ?? []),
+    supabase.from('sets').select('user_id, workout_id, exercise_id, weight_kg, reps, rir, is_warmup, is_drop_set, deleted_at').then((r) => r.data ?? []),
+    supabase.from('bodyweight_logs').select('user_id, date, weight_kg, deleted_at').then((r) => r.data ?? []),
+    supabase.from('measurements').select('user_id, date, waist_cm, deleted_at').then((r) => r.data ?? []),
+    supabase.from('daily_logs').select('user_id, date, si_routine, steps, deleted_at').then((r) => r.data ?? []),
+    supabase.from('profiles').select('*').then((r) => r.data ?? []),
   ])
 
-  if (!subs?.length) return res.status(200).json({ sent: 0, reason: 'no subscriptions' })
+  if (!subs.length) return res.status(200).json({ sent: 0, reason: 'no subscriptions' })
 
   const today = new Date().toISOString().slice(0, 10)
-  const daysSince = (iso) => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
 
-  // One message per user, chosen by what's actually true for them — a
-  // reminder that fires regardless of whether you already trained is the
-  // fastest way to teach someone to swipe notifications away unread.
-  const messageFor = (userId) => {
-    const profile = (profiles ?? []).find((p) => p.user_id === userId && !p.deleted_at)
-    const name = profile?.display_name?.split(' ')[0]
-    const mine = (workouts ?? []).filter((w) => w.user_id === userId && !w.deleted_at)
-    const trained = mine.filter((w) => w.finished_at)
-    const last = trained.sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))[0]
+  const mine = (rows, userId) => rows.filter((r) => r.user_id === userId && !r.deleted_at)
 
-    if (trained.some((w) => w.date === today)) return null // already trained today
-
-    const gap = last ? daysSince(last.finished_at) : null
-
-    if (gap === null) {
-      return { title: 'Log your first session', body: 'The programme is loaded and waiting. Open the app and start a day.' }
-    }
-    if (gap >= 4) {
-      return {
-        title: `${gap} days since your last session`,
-        body: 'Long enough that getting back in is the only thing that matters. Anything counts.',
-      }
-    }
-    if (gap >= 2) {
-      return {
-        title: name ? `${name}, rest day over?` : 'Rest day over?',
-        body: `Last session was ${gap} days ago. Today's day is queued up.`,
-      }
-    }
-
-    // Trained recently — only worth a nudge if the daily routine they're
-    // supposed to do EVERY day, including rest days, is still unticked.
-    if (profile?.has_si_joint) {
-      const todayLog = (dailyLogs ?? []).find((l) => l.user_id === userId && l.date === today && !l.deleted_at)
-      if (!todayLog?.si_routine) {
-        return { title: 'Daily SI routine', body: 'Five minutes: glute bridge, clamshell, dead bug, cat-cow. Rest days too.' }
-      }
-    }
-    return null
-  }
+  // One message per user, and only when there's something true to say.
+  // Two notifications is how you teach someone to ignore both.
+  const messageFor = (userId) => buildMessage({
+    profile: profiles.find((p) => p.user_id === userId && !p.deleted_at),
+    workouts: mine(workouts, userId),
+    sets: mine(sets, userId),
+    bodyweight: mine(bodyweight, userId),
+    measurements: mine(measurements, userId),
+    dailyLogs: mine(dailyLogs, userId),
+    today,
+  })
 
   const cache = new Map()
   let sent = 0
@@ -104,7 +80,7 @@ export default async function handler(req, res) {
     try {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        JSON.stringify({ ...message, tag: 'gym-reminder', url: '/' }),
+        JSON.stringify({ ...message, tag: message.tag ?? 'gym-reminder', url: '/' }),
       )
       sent++
       await supabase.from('push_subscriptions').update({ last_sent_at: new Date().toISOString() }).eq('id', sub.id)

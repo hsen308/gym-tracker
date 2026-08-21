@@ -54,17 +54,24 @@ export default function MealsScreen() {
 
   const saveEstimate = async (v) => {
     const now = new Date().toISOString()
+    const forDate = v.date ?? today
+    // The row for THAT day, not today's — otherwise logging Saturday at 1am
+    // on Sunday would overwrite Sunday.
+    const prior = await db.meal_logs
+      .where('date').equals(forDate)
+      .filter((l) => l.is_day_estimate && !l.deleted_at)
+      .first()
     await upsertRow('meal_logs', {
-      id: dayEstimate?.id ?? newId(),
+      id: prior?.id ?? newId(),
       user_id: user.id,
-      date: today,
+      date: forDate,
       meal_preset_id: null,
       name: 'Whole day (estimate)',
       calories: v.calories, protein_g: v.protein_g, carbs_g: v.carbs_g, fat_g: v.fat_g,
       notes: v.notes.trim() || null,
       is_day_estimate: true,
-      logged_at: dayEstimate?.logged_at ?? now,
-      created_at: dayEstimate?.created_at ?? now,
+      logged_at: prior?.logged_at ?? now,
+      created_at: prior?.created_at ?? now,
       updated_at: now,
       deleted_at: null,
     })
@@ -209,9 +216,8 @@ export default function MealsScreen() {
       <DayEstimateSheet
         open={estimateOpen}
         onClose={() => setEstimateOpen(false)}
-        existing={dayEstimate}
         onSave={saveEstimate}
-        onDelete={() => { softDeleteRow('meal_logs', dayEstimate.id); setEstimateOpen(false) }}
+        onDelete={(row) => { if (row) softDeleteRow('meal_logs', row.id); setEstimateOpen(false) }}
       />
 
       <Sheet open={!!openMeal} onClose={() => setOpenMeal(null)}>

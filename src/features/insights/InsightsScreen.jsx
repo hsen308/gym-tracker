@@ -38,7 +38,8 @@ export default function InsightsScreen() {
   const trend = ready ? weightTrend(bwLogs) : null
   const avgEnergy = useMemo(() => {
     if (!workouts?.length) return null
-    const recent = [...workouts].sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at)).slice(0, 5)
+    // Sorted by training day; finished_at reflects when it was typed up.
+    const recent = [...workouts].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
     const withEnergy = recent.filter((w) => w.energy != null)
     return withEnergy.length ? withEnergy.reduce((s, w) => s + w.energy, 0) / withEnergy.length : null
   }, [workouts])
