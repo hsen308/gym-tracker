@@ -1,8 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#14181F"/>
-  <rect x="96" y="236" width="320" height="40" rx="6" fill="#E9EDF3"/>
-  <rect x="60" y="196" width="36" height="120" rx="6" fill="#FF7A2F"/>
-  <rect x="416" y="196" width="36" height="120" rx="6" fill="#FF7A2F"/>
-  <rect x="24" y="216" width="24" height="80" rx="4" fill="#FF7A2F"/>
-  <rect x="464" y="216" width="24" height="80" rx="4" fill="#FF7A2F"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Gym Tracker">
+  <!-- Ballpoint blue, the app's primary colour. A light icon washes out
+       among saturated ones on a home screen; this reads at 48px. -->
+  <rect width="512" height="512" rx="114" fill="#1B44D8"/>
+
+  <!-- The baseline rule that runs through every screen in the app. Bars are
+       measured AGAINST something, which is what separates this from a
+       generic chart glyph. -->
+  <rect x="104" y="386" width="304" height="10" rx="5" fill="#FFFFFF" opacity="0.38"/>
+
+  <!-- Ascending bars: the adherence sparkline, which is the one element that
+       actually says what this app is for. Three, not five — at icon size
+       anything thinner turns to mush. -->
+  <rect x="112" y="286" width="76" height="86"  rx="14" fill="#FFFFFF" opacity="0.55"/>
+  <rect x="218" y="216" width="76" height="156" rx="14" fill="#FFFFFF" opacity="0.78"/>
+  <rect x="324" y="122" width="76" height="250" rx="14" fill="#FFFFFF"/>
 </svg>
