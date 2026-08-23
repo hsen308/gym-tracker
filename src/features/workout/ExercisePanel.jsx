@@ -9,6 +9,7 @@ import { isPR } from '../../lib/calc'
 import { progressionAdvice, warmupRamp } from '../../lib/progression'
 import { adjustedSets, adjustedWeight } from '../../lib/phase'
 import { formatWeight } from '../../lib/format'
+import { describeLoad, supportsLoadModes } from '../../lib/loadMode'
 import SetRow from './SetRow'
 import SetEditor from './SetEditor'
 import PainControl from './PainControl'
@@ -137,7 +138,7 @@ export default function ExercisePanel({
     setEditingSet(s)
     setEditDraft(isDuration
       ? { duration_seconds: s.duration_seconds ?? 0 }
-      : { weight_kg: s.weight_kg ?? 0, reps: s.reps ?? 0, rir: s.rir ?? 0 })
+      : { weight_kg: s.weight_kg ?? 0, reps: s.reps ?? 0, rir: s.rir ?? 0, load_mode: s.load_mode ?? 'added' })
   }
 
   return (
@@ -168,7 +169,7 @@ export default function ExercisePanel({
 
       {sessions.length > 0 && (
         <p className="ex-history">
-          <span className="faint">Last: </span>{summarise(sessions[0].sets, isDuration)}
+          <span className="faint">Last: </span>{summarise(sessions[0].sets, isDuration, exercise)}
         </p>
       )}
 
@@ -189,18 +190,19 @@ export default function ExercisePanel({
       {(warmups.length > 0 || working.length > 0) && (
         <div className="set-list">
           {warmups.map((s) => (
-            <SetRow key={s.id} setNumber={s.set_number} confirmedSet={s} isWarmup onEdit={() => openEdit(s)} />
+            <SetRow key={s.id} setNumber={s.set_number} confirmedSet={s} exercise={exercise} isWarmup onEdit={() => openEdit(s)} />
           ))}
           {working.map((s) => (
             <div key={s.id}>
               <SetRow
                 setNumber={s.set_number}
                 confirmedSet={s}
+                exercise={exercise}
                 isPR={historicalSets ? isPR(s, historicalSets) : false}
                 onEdit={() => openEdit(s)}
               />
               {drops.filter((dp) => dp.set_number === s.set_number).map((dp) => (
-                <SetRow key={dp.id} setNumber={dp.set_number} confirmedSet={dp} isDrop onEdit={() => openEdit(dp)} />
+                <SetRow key={dp.id} setNumber={dp.set_number} confirmedSet={dp} exercise={exercise} isDrop onEdit={() => openEdit(dp)} />
               ))}
               {!isDuration && (
                 <button className="add-drop pressable" onClick={() => addDrop(s)}>
@@ -279,13 +281,16 @@ export default function ExercisePanel({
   )
 }
 
-const summarise = (sets, isDuration) => {
+const summarise = (sets, isDuration, exercise) => {
   if (isDuration) return `${sets.map((s) => s.duration_seconds ?? 0).join(' / ')}s`
-  const w = sets[0]?.weight_kg
-  const sameWeight = sets.every((s) => s.weight_kg === w)
-  return sameWeight
-    ? `${formatWeight(w)} × ${sets.map((s) => s.reps).join(', ')}`
-    : sets.map((s) => `${formatWeight(s.weight_kg)}×${s.reps}`).join('  ')
+  // A collapsed panel reading "95 × 12, 11, 11" when one of those sets was
+  // bodyweight is worse than no summary at all.
+  const modal = supportsLoadModes(exercise)
+  const load = (x) => (modal ? describeLoad(x, formatWeight) : formatWeight(x.weight_kg))
+  const first = load(sets[0])
+  return sets.every((x) => load(x) === first)
+    ? `${first} × ${sets.map((x) => x.reps).join(', ')}`
+    : sets.map((x) => `${load(x)}×${x.reps}`).join('  ')
 }
 
 // Pre-fill priority: the progression rule's recommendation if there is one →
@@ -300,10 +305,22 @@ function seedDraft({ nextSetNumber, lastPerformance, working, programExercise, i
     return { duration_seconds: last?.duration_seconds ?? prev?.duration_seconds ?? programExercise?.rep_min ?? 30 }
   }
 
-  const base = prev?.weight_kg ?? advice?.nextWeight ?? last?.weight_kg ?? 0
+  // Carry the mode forward — you don't change machines between set 1 and 2.
+  const load_mode = prev?.load_mode ?? last?.load_mode ?? 'added'
+
+  // Only take a weight from a set on the SAME curve. Pre-filling 95kg because
+  // the previous set was a machine set, when this one is bodyweight, puts a
+  // number in the field that means nothing.
+  const sameMode = (x) => x && (x.load_mode ?? 'added') === load_mode
+  const base = (sameMode(prev) ? prev.weight_kg : null)
+    ?? advice?.nextWeight
+    ?? (sameMode(last) ? last.weight_kg : null)
+    ?? 0
+
   return {
-    weight_kg: prev ? base : adjustedWeight(base, phase),
+    weight_kg: load_mode === 'bodyweight' ? 0 : (sameMode(prev) ? base : adjustedWeight(base, phase)),
     reps: last?.reps ?? prev?.reps ?? programExercise?.rep_min ?? 8,
     rir: last?.rir ?? prev?.rir ?? programExercise?.target_rir_max ?? 2,
+    load_mode,
   }
 }

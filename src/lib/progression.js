@@ -8,6 +8,7 @@
 // Jumps: +2.5 kg upper body, +5 kg lower body. On isolation work the program
 // says use the smallest plate available or add reps instead.
 import { WEIGHT_STEP_KG, WEIGHT_STEP_KG_LONG_PRESS } from './constants'
+import { modeOf } from './loadMode'
 
 const LOWER_BODY = new Set(['quads', 'hamstrings', 'glutes', 'calves'])
 
@@ -30,8 +31,22 @@ export function progressionAdvice({ lastSets, programExercise, exercise }) {
       : null
   }
 
-  const withReps = lastSets.filter((s) => s.reps != null && s.weight_kg != null)
+  // Only sets sharing a load mode belong on one curve. A 120 kg machine dip
+  // and a bodyweight dip are different exercises, and mixing them produced
+  // advice drawn from a curve that read 120, 105, 95, 0, 80.
+  const dominantMode = modeOf(lastSets[lastSets.length - 1])
+  const sameCurve = lastSets.filter((s) => modeOf(s) === dominantMode)
+
+  const withReps = sameCurve.filter((s) => s.reps != null && s.weight_kg != null)
   if (!withReps.length) return null
+
+  // Bodyweight sets have no load to add, so progression is reps, not kilos.
+  if (dominantMode === 'bodyweight') {
+    const allAtTop = withReps.every((s) => s.reps >= rep_max)
+    return allAtTop
+      ? { action: 'add_reps', message: `${withReps.map((s) => s.reps).join(', ')} reps at bodyweight last time.`, detail: `Past ${rep_max} clean reps — add a belt and start the range again.` }
+      : { action: 'add_reps', message: `Bodyweight × ${withReps.map((s) => s.reps).join(', ')} last time.`, detail: `Work toward ${target_sets}×${rep_max}.` }
+  }
 
   // Compare within the heaviest load used last time. Mixing loads (e.g. a
   // drop set, or a swap mid-session) would otherwise make "all sets at the

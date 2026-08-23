@@ -7,6 +7,7 @@ import { format, parseISO } from 'date-fns'
 import { db, updateRow, softDeleteRow } from '../../db/dexie'
 import { formatDuration } from '../../lib/format'
 import { formatWeightIn } from '../../lib/units'
+import { describeLoad, supportsLoadModes } from '../../lib/loadMode'
 import { useUnit } from '../../app/ProfileProvider'
 import Icon from '../../components/Icon'
 import Button from '../../components/Button'
@@ -117,7 +118,7 @@ export default function WorkoutDetail() {
                   <div key={s.id} className="row mono" style={{ fontSize: 14 }}>
                     <span className="faint" style={{ fontSize: 11 }}>{s.is_warmup ? 'W' : String(s.set_number).padStart(2, '0')}</span>
                     <span style={{ flex: 1 }}>
-                      {s.duration_seconds != null ? `${s.duration_seconds}s` : `${formatWeightIn(s.weight_kg, unit)} × ${s.reps}`}
+                      {formatSet(s, exerciseById[exerciseId], unit)}
                     </span>
                     {s.rir != null && s.duration_seconds == null && (
                       <span className="faint" style={{ fontSize: 12 }}>{s.rir === 0 ? 'to failure' : `${s.rir} left`}</span>
@@ -170,4 +171,15 @@ export default function WorkoutDetail() {
       </Sheet>
     </div>
   )
+}
+
+// Reads a set back the way it was logged: which kit the weight was on, and
+// whether the reps were per side.
+function formatSet(s, exercise, unit) {
+  const perSide = exercise?.is_unilateral ? '/side' : ''
+  if (s.duration_seconds != null) return `${s.duration_seconds}s${perSide}`
+  const load = supportsLoadModes(exercise)
+    ? describeLoad(s, (kg) => formatWeightIn(kg, unit))
+    : formatWeightIn(s.weight_kg, unit)
+  return `${load} × ${s.reps}${perSide}`
 }

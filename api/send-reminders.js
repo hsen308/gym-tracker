@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   const [subs, workouts, sets, bodyweight, measurements, dailyLogs, profiles] = await Promise.all([
     supabase.from('push_subscriptions').select('*').then((r) => r.data ?? []),
     supabase.from('workouts').select('id, user_id, date, finished_at, skipped_at, si_pain_score, deleted_at').then((r) => r.data ?? []),
-    supabase.from('sets').select('user_id, workout_id, exercise_id, weight_kg, reps, rir, is_warmup, is_drop_set, deleted_at').then((r) => r.data ?? []),
+    supabase.from('sets').select('user_id, workout_id, exercise_id, weight_kg, reps, rir, is_warmup, is_drop_set, load_mode, deleted_at').then((r) => r.data ?? []),
     supabase.from('bodyweight_logs').select('user_id, date, weight_kg, deleted_at').then((r) => r.data ?? []),
     supabase.from('measurements').select('user_id, date, waist_cm, deleted_at').then((r) => r.data ?? []),
     supabase.from('daily_logs').select('user_id, date, si_routine, steps, deleted_at').then((r) => r.data ?? []),

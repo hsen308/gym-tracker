@@ -6,6 +6,7 @@ import { formatPlates } from '../../lib/plates'
 import { formatWeightIn, toDisplay, fromDisplay, STEP } from '../../lib/units'
 import { useUnit } from '../../app/ProfileProvider'
 import { weightMode, REPS_LEFT_LABEL, REPS_LEFT_HELP } from '../../lib/weightMode'
+import { LOAD_MODES, supportsLoadModes } from '../../lib/loadMode'
 
 // The set input, shared by "log the next set" and "edit a set I already
 // logged". Editing matters more than it looks: entering a session after
@@ -21,6 +22,12 @@ export default function SetEditor({
   const isDuration = exercise?.tracks === 'duration'
   const mode = weightMode(exercise)
   const plates = !isDuration && exercise?.equipment === 'barbell' ? formatPlates(draft.weight_kg, unit) : null
+
+  // Dips are three different exercises depending on the kit. Asking which
+  // keeps them off one another's progression curve.
+  const modeChoice = supportsLoadModes(exercise)
+  const loadMode = draft.load_mode ?? 'added'
+  const activeMode = LOAD_MODES.find((m) => m.key === loadMode)
 
   // build-plan §9: "double-tap on confirm creates duplicate sets."
   const [busy, setBusy] = useState(false)
@@ -39,27 +46,52 @@ export default function SetEditor({
     <div className={`set-editor ${compact ? 'is-compact' : ''}`}>
       {isDuration ? (
         <StepperRow
-          label="Hold" hint={repTarget ? `${repTarget}econds` : 'seconds'}
+          label={exercise?.is_unilateral ? 'Hold each side' : 'Hold'}
+          hint={repTarget ? `${repTarget}econds` : 'seconds'}
           value={draft.duration_seconds} step={5} longPressStep={15} min={0}
           format={(v) => `${v}s`}
           onChange={(duration_seconds) => onChange({ ...draft, duration_seconds })}
         />
       ) : (
         <>
+          {modeChoice && (
+            <div>
+              <p className="label" style={{ marginBottom: 'var(--space-3)' }}>How is it loaded?</p>
+              <div className="area-grid">
+                {LOAD_MODES.map((m) => (
+                  <button
+                    key={m.key}
+                    className={`area-chip ${loadMode === m.key ? 'is-active' : ''}`}
+                    onClick={() => onChange({ ...draft, load_mode: m.key, weight_kg: m.key === 'bodyweight' ? 0 : draft.weight_kg })}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              {activeMode && <p className="field-hint" style={{ marginTop: 'var(--space-2)' }}>{activeMode.hint}</p>}
+            </div>
+          )}
+
+          {/* Nothing to enter for a plain bodyweight set — the load is you. */}
+          {!(modeChoice && loadMode === 'bodyweight') && (
           <StepperRow
-            label="Weight"
-            hint={mode.hint}
+            label={modeChoice && loadMode === 'added' ? 'Added weight' : 'Weight'}
+            hint={modeChoice ? activeMode?.hint : mode.hint}
             onHelp={mode.help ? () => setHelp({ title: 'What weight to enter', body: mode.help }) : undefined}
             value={toDisplay(draft.weight_kg, unit) ?? 0}
             step={step.small} longPressStep={step.large} min={0}
             format={(n) => `${n}${unit}`}
             onChange={(shown) => onChange({ ...draft, weight_kg: fromDisplay(shown, unit) })}
           />
+          )}
           {plates && <p className="plate-hint">{plates === 'bar only' ? 'Empty bar' : `${plates} per side`}</p>}
 
           <StepperRow
-            label="Reps" hint={repTarget}
-            value={draft.reps} step={1} min={0}
+            label={exercise?.is_unilateral ? 'Reps each side' : 'Reps'}
+            hint={repTarget}
+            value={draft.reps}
+            step={1}
+            min={0}
             onChange={(reps) => onChange({ ...draft, reps })}
           />
 

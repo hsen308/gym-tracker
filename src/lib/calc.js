@@ -45,6 +45,10 @@ export const movingAverage = (series, window = 7) =>
 // A set is a PR if its e1RM exceeds every previous non-warmup set for that
 // exercise. `previousSets` should already be filtered to the same exercise_id.
 export const isPR = (newSet, previousSets) => {
+  // A PR is only a PR against comparable sets. 120 kg on the dip machine is
+  // not a record over a bodyweight dip; they aren't the same exercise.
+  const mode = (s) => s?.load_mode ?? 'added'
+  previousSets = previousSets.filter((s) => mode(s) === mode(newSet))
   const candidateE1rm = e1rm(newSet)
   return previousSets
     .filter((s) => !s.is_warmup)

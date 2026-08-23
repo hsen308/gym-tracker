@@ -213,6 +213,46 @@ alter table bodyweight_logs add column if not exists measured_at text;    -- mor
 alter table sets add column if not exists is_drop_set boolean not null default false;
 
 -- ------------------------------------------------------------
+-- 6d. What the weight on a set actually refers to
+--
+--     'Dips' is three different exercises depending on the day:
+--       bodyweight  parallel bars, just you
+--       added       same, plus a belt
+--       machine     a seated dip machine, where the stack IS the load and
+--                   has nothing to do with what you weigh
+--
+--     Logged together they formed one nonsense curve — 0 kg and 120 kg
+--     alternating — and every progression suggestion drawn from it was
+--     meaningless. Progression now only ever compares sets sharing a mode.
+-- ------------------------------------------------------------
+alter table sets add column if not exists load_mode text not null default 'added';
+
+-- Repair rows logged before the column existed. On a bodyweight exercise a
+-- large number is a machine stack (nobody hangs 80 kg from a dip belt at
+-- 79 kg bodyweight); zero means bodyweight alone.
+update sets s
+   set load_mode = case
+         when coalesce(s.weight_kg, 0) = 0 then 'bodyweight'
+         when s.weight_kg >= 40           then 'machine'
+         else 'added'
+       end
+  from exercises e
+ where e.id = s.exercise_id
+   and e.equipment = 'bodyweight'
+   and s.load_mode = 'added';
+
+-- ------------------------------------------------------------
+-- 6e. (nothing to add — see note)
+--
+--     Pallof press and side planks are prescribed "3 x 12 each side" and
+--     the app treated that as decorative text, so three logged sets could
+--     mean three or six. The column for this already existed
+--     (exercises.is_unilateral, set correctly by the seed since day one);
+--     nothing in the UI had ever read it. Fixed in the client, no
+--     migration needed.
+-- ------------------------------------------------------------
+
+-- ------------------------------------------------------------
 -- 7. push_subscriptions — one row per installed device
 --
 --    A browser hands you an endpoint URL plus two keys; that triple IS

@@ -22,19 +22,43 @@ export function weeklySetsPerMuscle(sets, exerciseById) {
 
 // One best-set-e1RM point per session, per exercise — the same "top set
 // wins" rule ExerciseHistory uses, just computed for every exercise at once.
+// An exercise's trend can only be drawn across sets that measure the same
+// thing. Dips logged on the machine (95 kg) and on the bars (bodyweight, so
+// e1RM 0) are two different exercises sharing a name, and a line through
+// both is a cliff that means nothing. Sets outside the mode you mostly use
+// are left out of the trend rather than allowed to distort it.
+export function dominantModeByExercise(sets) {
+  const tally = {}
+  for (const s of sets) {
+    if (s.is_warmup) continue
+    ;(tally[s.exercise_id] ??= {})[s.load_mode ?? 'added'] =
+      ((tally[s.exercise_id]?.[s.load_mode ?? 'added']) ?? 0) + 1
+  }
+  return Object.fromEntries(
+    Object.entries(tally).map(([id, modes]) =>
+      [id, Object.entries(modes).sort((a, b) => b[1] - a[1])[0][0]]),
+  )
+}
+
 export function sessionPointsByExercise(sets, workouts) {
   const workoutById = Object.fromEntries(workouts.map((w) => [w.id, w]))
+  const dominant = dominantModeByExercise(sets)
   const bestByExerciseSession = {} // `${exerciseId}::${workoutId}` -> best set
 
   for (const s of sets) {
     if (s.is_warmup) continue
+    if ((s.load_mode ?? 'added') !== dominant[s.exercise_id]) continue
     const workout = workoutById[s.workout_id]
     if (!workout?.date) continue
     const key = `${s.exercise_id}::${s.workout_id}`
-    const value = e1rm(s)
+    // Nothing is loaded, so there is no estimated 1RM to speak of — reps
+    // ARE the progress. Without this every bodyweight exercise scores 0
+    // forever and gets reported as permanently stalling.
+    const bw = (s.load_mode ?? 'added') === 'bodyweight'
+    const value = bw ? (s.reps ?? 0) : e1rm(s)
     const current = bestByExerciseSession[key]
     if (!current || value > current.e1rm) {
-      bestByExerciseSession[key] = { exerciseId: s.exercise_id, date: workout.date, e1rm: value }
+      bestByExerciseSession[key] = { exerciseId: s.exercise_id, date: workout.date, e1rm: value, metric: bw ? 'reps' : 'e1rm' }
     }
   }
 

@@ -113,7 +113,10 @@ export function buildMessage({ profile, workouts, sets, bodyweight, measurements
       if (s.is_warmup || s.is_drop_set || !s.weight_kg) continue
       const w = workouts.find((x) => x.id === s.workout_id)
       if (!w?.finished_at) continue
-      ;(byEx[s.exercise_id] ??= []).push({ at: w.date, v: e1rm(s) })
+      // Keyed by mode as well as exercise: a belt dip and a machine dip
+      // share a name and nothing else, and "up 60 kg" drawn across the two
+      // would be a congratulation for switching equipment.
+      ;(byEx[`${s.exercise_id}|${s.load_mode ?? 'added'}`] ??= []).push({ at: w.date, v: e1rm(s) })
     }
     for (const [, points] of Object.entries(byEx)) {
       if (points.length < 6) continue
