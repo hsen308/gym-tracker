@@ -13,6 +13,9 @@ import Icon from '../../components/Icon'
 import InstallPrompt from '../../components/InstallPrompt'
 import DailyRoutine from '../daily/DailyRoutine'
 import MorningCheck from '../daily/MorningCheck'
+import HabitCard from '../daily/HabitCard'
+import AdalimumabCard from '../medication/AdalimumabCard'
+import CreatineCard from '../habits/CreatineCard'
 import { programPhase, weeksToDeload } from '../../lib/phase'
 import { useProgramStart } from '../../lib/useProgramStart'
 
@@ -66,6 +69,14 @@ export default function TodayScreen() {
 
       <MorningCheck />
 
+      <div style={{ marginBottom: 'var(--space-4)' }}>
+        <HabitCard />
+      </div>
+
+      <div style={{ marginBottom: 'var(--space-4)' }}>
+        <AdalimumabCard />
+      </div>
+
       {featured ? (
         <div className="panel next-card">
           <div>
@@ -93,8 +104,19 @@ export default function TodayScreen() {
         <p className="empty">No program loaded yet.</p>
       )}
 
+      <button className="panel coach-card pressable" onClick={() => navigate('/coach')}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="label">Coach's report</span>
+          <span className="coach-card-line">
+            {phase?.week != null ? `Week ${phase.week}` : 'Program'} · what the numbers say, in one line
+          </span>
+        </span>
+        <Icon name="chevron" size={16} className="faint" />
+      </button>
+
       <div style={{ marginTop: 'var(--space-4)' }}>
         <DailyRoutine />
+        <CreatineCard />
       </div>
 
       <div className="row section-label">

@@ -31,6 +31,11 @@ export const DEFAULT_PROFILE = {
   water_target_l: 3.2,
   has_si_joint: false,
   creatine_started_on: null,
+  // Adalimumab (Humira), 40 mg. The rhythm is every two weeks or so and is
+  // set per person on the profile; the reminder and the Today card read the
+  // same two fields.
+  adalimumab_last_injection: null,
+  adalimumab_interval_days: 15,
   // null = fall back to the programme's day count.
   sessions_per_week: null,
   // null = fall back to the earliest logged workout. Set explicitly, it wins,

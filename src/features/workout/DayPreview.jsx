@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate, useParams } from 'react-router-dom'
 import { db, newId, upsertRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
-import { adjustedSets, programPhase } from '../../lib/phase'
+import { adjustedSets, setsForSession, programPhase } from '../../lib/phase'
 import { useProgramStart } from '../../lib/useProgramStart'
 import { todayLocalDate } from '../../lib/format'
 import Button from '../../components/Button'
@@ -30,6 +30,7 @@ export default function DayPreview() {
 
   const [cueExercise, setCueExercise] = useState(null)
   const [startOpen, setStartOpen] = useState(false)
+  const [light, setLight] = useState(false)
 
   const programStart = useProgramStart()
   const phase = useMemo(() => programPhase(programStart), [programStart])
@@ -37,12 +38,15 @@ export default function DayPreview() {
   if (!day || !programExercises || !exercises) return null
   const exerciseById = Object.fromEntries(exercises.map((e) => [e.id, e]))
 
-  const totalSets = programExercises.reduce(
-    (n, pe) => n + adjustedSets(pe.target_sets, phase, (pe.rest_seconds ?? 0) >= 120), 0,
-  )
+  // Same set rules the active session will use: phase adjustments first, then
+  // light-mode halving for everything that isn't a main lift.
+  const sessionSets = (pe) =>
+    setsForSession(pe.target_sets, phase, (pe.rest_seconds ?? 0) >= 120, !!pe.is_strength_lift, light)
+
+  const totalSets = programExercises.reduce((n, pe) => n + sessionSets(pe), 0)
   const estMinutes = Math.round(
     programExercises.reduce((m, pe) => {
-      const sets = adjustedSets(pe.target_sets, phase, (pe.rest_seconds ?? 0) >= 120)
+      const sets = sessionSets(pe)
       return m + sets * ((pe.rest_seconds ?? 90) + 40) // rest plus roughly the set itself
     }, 0) / 60,
   )
@@ -56,6 +60,7 @@ export default function DayPreview() {
       date: date ?? todayLocalDate(),
       started_at: startedAt ?? now,
       finished_at: null,
+      is_light: light,
       bodyweight_kg: null,
       si_pain_score: null,
       energy: null,
@@ -117,12 +122,19 @@ export default function DayPreview() {
         </div>
       )}
 
+      {light && (
+        <div className="phase-banner" style={{ background: 'var(--signal-soft)', borderColor: 'var(--signal)' }}>
+          <p className="label label-strong">Lighter session</p>
+          <p className="phase-note">Accessories at half their sets; main lifts keep their full volume. You can switch back to a full session at any point once you're in.</p>
+        </div>
+      )}
+
       <h2 className="label section-label">The session</h2>
       <div className="panel rule-list">
         {programExercises.map((pe, i) => {
           const ex = exerciseById[pe.exercise_id]
           if (!ex) return null
-          const sets = adjustedSets(pe.target_sets, phase, (pe.rest_seconds ?? 0) >= 120)
+          const sets = sessionSets(pe)
           const isDuration = ex.tracks === 'duration'
           return (
             <button key={pe.id} className="preview-row pressable" onClick={() => setCueExercise(ex)}>
@@ -133,6 +145,7 @@ export default function DayPreview() {
                   {pe.is_strength_lift && <span className="tag tag-strength">MAIN LIFT</span>}
                   {ex.si_risk === 'caution' && <span className="tag tag-caution">SI</span>}
                 </span>
+                <span className="preview-muscle">{ex.primary_muscle ? ex.primary_muscle.replace(/_/g, ' ') : ''}</span>
                 <span className="preview-target">
                   {sets} × {pe.rep_min}–{pe.rep_max}{isDuration ? 's' : ' reps'} · {pe.rest_seconds}s rest
                   {pe.notes ? ` · ${pe.notes}` : ''}
@@ -152,7 +165,13 @@ export default function DayPreview() {
           </Button>
         ) : (
           <>
-            <Button className="btn-block" onClick={() => startSession({})}>Start session now</Button>
+            <div className="session-mode">
+              <button className={`pressable ${!light ? 'is-active' : ''}`} onClick={() => setLight(false)}>Full</button>
+              <button className={`pressable ${light ? 'is-active' : ''}`} onClick={() => setLight(true)}>Lighter</button>
+            </div>
+            <Button className="btn-block" onClick={() => startSession({})}>
+              {light ? 'Start lighter session' : 'Start session now'}
+            </Button>
             <div className="preview-secondary">
               <button className="link-action pressable" onClick={() => setStartOpen(true)}>
                 <Icon name="timer" size={15} /> Log one I already did
@@ -184,6 +203,11 @@ export function ExerciseCues({ exercise }) {
   return (
     <>
       <h2 className="sheet-title">{exercise.name}</h2>
+      {exercise.primary_muscle && (
+        <p className="mono muted" style={{ fontSize: 12, marginBottom: 'var(--space-4)' }}>
+          {exercise.primary_muscle.replace(/_/g, ' ').toUpperCase()}
+        </p>
+      )}
       {exercise.si_risk === 'caution' && (
         <div className="callout callout-warn">
           <p className="label label-strong">SI joint caution</p>

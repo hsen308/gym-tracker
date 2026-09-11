@@ -26,6 +26,7 @@ const WorkoutDetail = lazy(() => import('../features/history/WorkoutDetail'))
 const ExerciseHistory = lazy(() => import('../features/history/ExerciseHistory'))
 const BodyScreen = lazy(() => import('../features/body/BodyScreen'))
 const InsightsScreen = lazy(() => import('../features/insights/InsightsScreen'))
+const CoachReport = lazy(() => import('../features/insights/CoachReport'))
 const MealsScreen = lazy(() => import('../features/meals/MealsScreen'))
 
 // ActiveWorkout deliberately opts out — the logging path stays
@@ -88,6 +89,7 @@ export default function AppRouter() {
       <Route path="/exercise/:exerciseId" element={<RequireAuth><WithTabBar><ExerciseHistory /></WithTabBar></RequireAuth>} />
       <Route path="/body" element={<RequireAuth><WithTabBar><BodyScreen /></WithTabBar></RequireAuth>} />
       <Route path="/insights" element={<RequireAuth><WithTabBar><InsightsScreen /></WithTabBar></RequireAuth>} />
+      <Route path="/coach" element={<RequireAuth><WithTabBar><CoachReport /></WithTabBar></RequireAuth>} />
       <Route path="/meals" element={<RequireAuth><WithTabBar><MealsScreen /></WithTabBar></RequireAuth>} />
     </Routes>
   )

@@ -287,6 +287,46 @@ create trigger trg_touch before update on push_subscriptions
   for each row execute function touch_updated_at();
 
 -- ------------------------------------------------------------
+-- 7b. Feature additions — the migrations that shipped separately
+--
+--     Each of these originally shipped as its own additive, idempotent
+--     file (03-07-*.sql). They're consolidated here so a fresh environment
+--     gets everything from this one file; running them again on an already
+--     migrated database is harmless (all `add column if not exists`).
+-- ------------------------------------------------------------
+
+-- Adalimumab dosing: the next-dose date + interval live on the profile,
+-- exactly like creatine — one row already exists per user.
+alter table profiles add column if not exists adalimumab_last_injection date;
+alter table profiles add column if not exists adalimumab_interval_days int not null default 15;
+
+-- Caffeine asked at session start (null = not asked) and per-exercise pain
+-- locations alongside the traffic-light level.
+alter table workouts add column if not exists caffeine boolean;
+alter table workout_exercises add column if not exists pain_locations text[] default '{}';
+
+-- Light session mode: main lifts at full volume, accessories halved,
+-- recorded on the workout so it can be switched back mid-session.
+alter table workouts add column if not exists is_light boolean not null default false;
+
+-- Custom exercises created in the library + persistent swaps remembered on
+-- the program row.
+alter table exercises add column if not exists is_custom boolean not null default false;
+alter table program_exercises add column if not exists swap_to_exercise_id uuid references exercises(id);
+
+-- Tap-to-confirm creatine on today's daily_logs row. The evening notification
+-- reads this flag, so it only ever nudges about creatine that wasn't taken.
+alter table daily_logs add column if not exists creatine_taken boolean not null default false;
+
+-- What the last push from THIS slot was, so the two daily crons can enforce
+-- "never two of the same kind" via the tag guard in _messages.js.
+alter table push_subscriptions add column if not exists last_sent_tag text;
+
+-- Session quality 0-10 (energy 40% / % target sets 30% / SI pain inverse 20% /
+-- caffeine 10%), computed at finish by FinishSheet.jsx.
+alter table workouts add column if not exists quality_score numeric(3,1);
+
+-- ------------------------------------------------------------
 -- 8. Tell PostgREST to re-read the schema
 -- ------------------------------------------------------------
 notify pgrst, 'reload schema';

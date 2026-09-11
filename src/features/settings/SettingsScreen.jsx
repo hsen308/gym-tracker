@@ -11,6 +11,8 @@ import { useProfile } from '../../app/ProfileProvider'
 import { useProgramStart, startDateForWeek } from '../../lib/useProgramStart'
 import { programPhase } from '../../lib/phase'
 import { DELOAD_CYCLE_WEEKS } from '../../lib/constants'
+import { todayLocalDate } from '../../lib/format'
+import { ADALIMUMAB_DEFAULT_INTERVAL, adalimumabCountdown } from '../../lib/medication'
 import StepperRow from '../../components/StepperRow'
 import { pushSupported, pushConfigured, isStandalone, currentSubscription, subscribe, unsubscribe, sendTestNotification } from '../../lib/push'
 import Button from '../../components/Button'
@@ -36,6 +38,18 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (weekDraft === null && phase?.week) setWeekDraft(phase.week)
   }, [phase?.week, weekDraft])
+
+  // Adalimumab: date of the last dose + the interval, saved together.
+  const [doseDate, setDoseDate] = useState(profile.adalimumab_last_injection ?? todayLocalDate())
+  const [doseInterval, setDoseInterval] = useState(profile.adalimumab_interval_days ?? ADALIMUMAB_DEFAULT_INTERVAL)
+  const doseCountdown = adalimumabCountdown(profile.adalimumab_last_injection, profile.adalimumab_interval_days)
+  const doseDirty = doseDate !== (profile.adalimumab_last_injection ?? todayLocalDate()) ||
+    doseInterval !== (profile.adalimumab_interval_days ?? ADALIMUMAB_DEFAULT_INTERVAL)
+
+  const saveDose = async () => {
+    await saveProfile({ adalimumab_last_injection: doseDate || null, adalimumab_interval_days: doseInterval })
+    setToast('Dose schedule saved.')
+  }
 
   const saveWeek = async () => {
     await saveProfile({ program_start_date: startDateForWeek(weekDraft) })
@@ -271,6 +285,41 @@ export default function SettingsScreen() {
           ) : (
             <Button variant="secondary" className="btn-block" onClick={() => saveProfile({ creatine_started_on: todayLocalDate() })}>
               I started creatine
+            </Button>
+          )}
+        </section>
+
+        <section className="panel set-block">
+          <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Adalimumab</p>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.55 }}>
+            {profile.adalimumab_last_injection && doseCountdown
+              ? `Last dose ${format(parseISO(profile.adalimumab_last_injection), 'd MMMM')} — the next one is ${
+                  doseCountdown.days < 0
+                    ? `${-doseCountdown.days} days overdue`
+                    : doseCountdown.days === 0
+                      ? 'due today'
+                      : `due in ${doseCountdown.days} days`
+                }. The reminder nudges you when the window opens, and the Today screen shows the countdown.`
+              : "40 mg every couple of weeks. Set the date of your last dose and how often you take it — the countdown appears on Today and the reminder nudges you when the window opens."}
+          </p>
+          <label className="field">
+            <span className="label">Last injection</span>
+            <input
+              type="date"
+              value={doseDate}
+              max={todayLocalDate()}
+              onChange={(e) => setDoseDate(e.target.value)}
+            />
+          </label>
+          <StepperRow
+            label="Dose every" hint="days"
+            value={doseInterval} onChange={setDoseInterval}
+            step={1} min={7} max={30}
+            format={(n) => `${n} days`}
+          />
+          {doseDirty && (
+            <Button className="btn-block" style={{ marginTop: 'var(--space-4)' }} onClick={saveDose}>
+              Save dose
             </Button>
           )}
         </section>

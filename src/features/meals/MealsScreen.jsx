@@ -10,6 +10,7 @@ import { db, newId, upsertRow, softDeleteRow } from '../../db/dexie'
 import { useAuth } from '../../app/AuthProvider'
 import { todayLocalDate } from '../../lib/format'
 import { MEAL_SLOTS } from '../../lib/constants'
+import { FRUIT_PRESETS, QUICK_FOODS } from '../../lib/quickFoods'
 import { useProfile } from '../../app/ProfileProvider'
 import Sheet from '../../components/Sheet'
 import Button from '../../components/Button'
@@ -17,6 +18,7 @@ import Field from '../../components/Field'
 import Icon from '../../components/Icon'
 import DayEstimateSheet from './DayEstimateSheet'
 import ScanFoodSheet from './ScanFoodSheet'
+import QuickFoodSheet from './QuickFoodSheet'
 
 export default function MealsScreen() {
   const { user } = useAuth()
@@ -35,6 +37,7 @@ export default function MealsScreen() {
   const [customOpen, setCustomOpen] = useState(false)
   const [estimateOpen, setEstimateOpen] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
+  const [quickFood, setQuickFood] = useState(null)
   const [draft, setDraft] = useState({ name: '', calories: '', protein_g: '', carbs_g: '', fat_g: '' })
 
   if (!presets || !todayLogs) return null
@@ -103,6 +106,20 @@ export default function MealsScreen() {
     await logMeal(preset)
     setDraft({ name: '', calories: '', protein_g: '', carbs_g: '', fat_g: '' })
     setCustomOpen(false)
+  }
+
+  // Fixed-portion fruits: tapped straight onto the log, no preset row needed —
+  // one apple is the same macros every time, and a preset would just be a
+  // permanently-unused row in the synced library.
+  const logFruit = async (fruit) => {
+    const now = new Date().toISOString()
+    await upsertRow('meal_logs', {
+      id: newId(), user_id: user.id, date: today,
+      meal_preset_id: null, name: fruit.name,
+      calories: fruit.calories, protein_g: fruit.protein_g,
+      carbs_g: fruit.carbs_g, fat_g: fruit.fat_g,
+      logged_at: now, created_at: now, updated_at: now, deleted_at: null,
+    })
   }
 
   return (
@@ -182,6 +199,33 @@ export default function MealsScreen() {
         </section>
       )}
 
+      <section>
+        <h2 className="label label-strong section-label">Quick foods</h2>
+        <p className="muted" style={{ fontSize: 12, marginBottom: 'var(--space-3)', lineHeight: 1.5 }}>
+          Eggs, pita, rice, mjaddara, chicken — set the portion, macros adjust.
+        </p>
+        <div className="panel rule-list">
+          {QUICK_FOODS.map((f) => (
+            <button key={f.id} className="meal-row pressable" style={{ padding: 'var(--space-4)' }} onClick={() => setQuickFood(f)}>
+              <span className="meal-name">{f.name}</span>
+              <span className="meal-kcal">+</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="label label-strong section-label">Fruit</h2>
+        <div className="panel rule-list">
+          {FRUIT_PRESETS.map((fruit) => (
+            <button key={fruit.name} className="meal-row pressable" style={{ padding: 'var(--space-4)' }} onClick={() => logFruit(fruit)}>
+              <span className="meal-name">{fruit.name}</span>
+              <span className="meal-kcal">{fruit.calories}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <div className="stack-2" style={{ marginTop: 'var(--space-5)' }}>
         <Button variant="secondary" className="btn-block" onClick={() => setScanOpen(true)}>
           <Icon name="scan" size={18} /> Scan a barcode
@@ -211,6 +255,7 @@ export default function MealsScreen() {
       {/* A scanned item is logged directly rather than saved as a preset —
           you rarely eat the same packaged thing twice, and the preset list is
           the programme's meals, not a shopping history. */}
+      <QuickFoodSheet food={quickFood} onClose={() => setQuickFood(null)} />
       <ScanFoodSheet open={scanOpen} onClose={() => setScanOpen(false)} onLog={logMeal} />
 
       <DayEstimateSheet

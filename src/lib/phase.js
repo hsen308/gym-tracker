@@ -82,6 +82,17 @@ export function adjustedWeight(weightKg, phase) {
   return Math.round((weightKg * phase.loadPct) / 2.5) * 2.5
 }
 
+// Target sets for a LIGHT session: the whole point is keeping the main lifts
+// at full volume while everything else takes a small fraction of its sets, so
+// the big session still gets done on a day it would otherwise be skipped.
+// Never drops below 1. Same inputs as adjustedSets plus the strength-lift
+// flag and the light flag, so it can layer onto the deload/return rules.
+export function setsForSession(targetSets, phase, isCompound, isStrengthLift, isLight) {
+  const base = adjustedSets(targetSets, phase, isCompound)
+  if (!isLight || isStrengthLift) return base
+  return Math.max(1, Math.ceil(base * 0.5))
+}
+
 // Weeks until the next deload — a countdown people actually plan around,
 // unlike a bare "week 5 of 7".
 export function weeksToDeload(week) {

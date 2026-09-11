@@ -7,7 +7,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, getLastPerformanceByExercise } from '../../db/dexie'
 import { isPR } from '../../lib/calc'
 import { progressionAdvice, warmupRamp } from '../../lib/progression'
-import { adjustedSets, adjustedWeight } from '../../lib/phase'
+import { setsForSession, adjustedWeight } from '../../lib/phase'
 import { formatWeight } from '../../lib/format'
 import { describeLoad, supportsLoadModes } from '../../lib/loadMode'
 import SetRow from './SetRow'
@@ -17,14 +17,17 @@ import Sheet from '../../components/Sheet'
 import Icon from '../../components/Icon'
 
 export default function ExercisePanel({
-  exercise, programExercise, confirmedSets, workoutId, index, phase,
+  exercise, programExercise, confirmedSets, workoutId, index, phase, isLight,
   isExpanded, onToggleExpand, onConfirmSet, onUpdateSet, onRemoveSet, onOpenCues,
-  onOpenSwap, isSwapped, painLevel, onPainChange,
+  onOpenSwap, isSwapped, painLevel, onPainChange, painLocations, onPainLocationsChange,
 }) {
   const isDuration = exercise.tracks === 'duration'
   const isCompound = (programExercise?.rest_seconds ?? 0) >= 120
-  // Weeks 1–3 and deload weeks change how many sets today actually calls for.
-  const targetSets = adjustedSets(programExercise?.target_sets ?? 3, phase, isCompound)
+  // Weeks 1–3 and deload weeks change how many sets today actually calls for;
+  // a light session then halves everything that isn't a main lift on top.
+  const targetSets = setsForSession(
+    programExercise?.target_sets ?? 3, phase, isCompound, !!programExercise?.is_strength_lift, isLight,
+  )
 
   // A drop continues the set before it — counting it separately would
   // report 5 sets when the programme asked for 3.
@@ -91,6 +94,7 @@ export default function ExercisePanel({
       <span className="ex-row-index">{String(index).padStart(2, '0')}</span>
       <span className="ex-row-name">
         <span className="ex-row-title">{exercise.name}</span>
+        <span className="ex-row-muscle">{muscleLabel(exercise.primary_muscle)}</span>
         {isSwapped && <span className="tag tag-swap">SWAP</span>}
         {programExercise?.is_strength_lift && <span className="tag tag-strength">MAIN LIFT</span>}
         {exercise.si_risk === 'caution' && <span className="tag tag-caution">SI</span>}
@@ -233,7 +237,12 @@ export default function ExercisePanel({
       {/* Only on the lifts the program flags — asking after every cable curl
           would train you to ignore it (apple-design §13: over-feedback). */}
       {exercise.si_risk === 'caution' && (
-        <PainControl value={painLevel} onChange={onPainChange} />
+        <PainControl
+          value={painLevel}
+          onChange={onPainChange}
+          painLocations={painLocations}
+          onLocationsChange={onPainLocationsChange}
+        />
       )}
 
       <Sheet open={!!dropFor} onClose={() => setDropFor(null)}>
@@ -280,6 +289,8 @@ export default function ExercisePanel({
     </div>
   )
 }
+
+const muscleLabel = (primary) => (primary ? primary.replace(/_/g, ' ') : '')
 
 const summarise = (sets, isDuration, exercise) => {
   if (isDuration) return `${sets.map((s) => s.duration_seconds ?? 0).join(' / ')}s`

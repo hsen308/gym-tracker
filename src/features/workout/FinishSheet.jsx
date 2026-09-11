@@ -6,7 +6,7 @@ import { toLocalInputValue, fromLocalInputValue } from '../../lib/time'
 
 // SI pain 0–10 and energy 1–5 are the two inputs Phase 6's correlation and
 // calorie-adjust logic run on — the whole reason the finish step exists.
-export default function FinishSheet({ open, onClose, onFinish, startedAt }) {
+export default function FinishSheet({ open, onClose, onFinish, startedAt, workout, targetSets, doneSets }) {
   const [siPain, setSiPain] = useState(0)
   const [energy, setEnergy] = useState(3)
   // The program calls sleep "genuinely as important as the diet", and the
@@ -23,6 +23,25 @@ export default function FinishSheet({ open, onClose, onFinish, startedAt }) {
     if (open) { setFinishedAt(toLocalInputValue(new Date())); setEditTime(false) }
   }, [open])
 
+  // The 0–10 quality score. Weights per spec: energy 40%, % target sets
+  // 30%, SI pain inverse 20%, caffeine 10%. Caffeine is asked once at the
+  // start (stored on the workout); a session that never got the question
+  // has no caffeine data, so instead of inventing a 0.5 the known
+  // components are renormalised to 100%.
+  const setRatio = targetSets > 0 ? Math.min(1, (doneSets ?? 0) / targetSets) : 0
+  const qualityScore = () => {
+    const energyPts = (energy - 1) / 4
+    const setsPts = setRatio
+    const painPts = (10 - siPain) / 10
+    if (workout?.caffeine == null) {
+      const raw = (0.4 * energyPts + 0.3 * setsPts + 0.2 * painPts) / 0.9
+      return Math.round(raw * 10) / 10
+    }
+    const caffeinePts = workout.caffeine ? 1 : 0
+    const raw = 0.4 * energyPts + 0.3 * setsPts + 0.2 * painPts + 0.1 * caffeinePts
+    return Math.round(raw * 10) / 10
+  }
+
   const finish = () => {
     if (saving) return
     const end = editTime ? fromLocalInputValue(finishedAt) : null
@@ -32,6 +51,7 @@ export default function FinishSheet({ open, onClose, onFinish, startedAt }) {
       energy,
       sleep_hours: sleep,
       notes: notes.trim() || null,
+      quality_score: qualityScore(),
       finishedAt: end ? end.toISOString() : undefined,
     })
   }
@@ -41,6 +61,11 @@ export default function FinishSheet({ open, onClose, onFinish, startedAt }) {
   return (
     <Sheet open={open} onClose={onClose}>
       <h2 className="sheet-title">Finish session</h2>
+
+      <div className="quality-readout">
+        <span className="label">Session quality</span>
+        <span className="readout">{qualityScore().toFixed(1)}<span className="quality-max">/10</span></span>
+      </div>
 
       <div className="stack-5" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         <StepperRow
