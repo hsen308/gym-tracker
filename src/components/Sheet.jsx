@@ -2,7 +2,7 @@
 // and rubber-band math. AnimatePresence lets a component animate OUT before
 // React removes it from the tree (plain React unmounts instantly, with no
 // chance to animate an exit).
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence, useDragControls } from 'motion/react'
 import { useEffect } from 'react'
 
 // A bottom sheet you swipe down to dismiss — build-plan §6e: "no modals that
@@ -11,6 +11,13 @@ import { useEffect } from 'react'
 // fly off; onDragEnd checks distance AND velocity so a fast short flick
 // dismisses the same as a slow long drag (apple-design §6, momentum).
 export default function Sheet({ open, onClose, children }) {
+  // The drag is initiated ONLY by the handle (dragListener={false} +
+  // dragControls.start from the handle's pointerdown). Drag the whole sheet
+  // and a swipe over the content becomes a scroll gesture — the sheet also
+  // has max-height + overflow-y, and those two things can't coexist on the
+  // same touch surface without fighting.
+  const dragControls = useDragControls()
+
   // Escape should close it too — the sheet is used on desktop during
   // development, and a keyboard user otherwise has no way out.
   useEffect(() => {
@@ -43,6 +50,8 @@ export default function Sheet({ open, onClose, children }) {
           role="dialog"
           aria-modal="true"
           drag="y"
+          dragListener={false}
+          dragControls={dragControls}
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={{ top: 0, bottom: 0.55 }}
           onDragEnd={(_, info) => {
@@ -55,7 +64,7 @@ export default function Sheet({ open, onClose, children }) {
           // gesture that opens and closes it carries momentum.
           transition={{ type: 'spring', bounce: 0.12, duration: 0.36 }}
         >
-          <div className="sheet-handle" />
+          <div className="sheet-handle" onPointerDown={(e) => dragControls.start(e)} />
           {children}
         </motion.div>
       )}

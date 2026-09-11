@@ -107,7 +107,6 @@
   padding: var(--space-2) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
   max-height: 88vh;
   overflow-y: auto;
-  touch-action: none;
 }
 .sheet-handle {
   width: 36px; height: 4px;
