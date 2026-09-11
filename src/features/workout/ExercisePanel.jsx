@@ -19,7 +19,7 @@ import Icon from '../../components/Icon'
 export default function ExercisePanel({
   exercise, programExercise, confirmedSets, workoutId, index, phase, isLight,
   isExpanded, onToggleExpand, onConfirmSet, onUpdateSet, onRemoveSet, onOpenCues,
-  onOpenSwap, isSwapped, painLevel, onPainChange, painLocations, onPainLocationsChange,
+  onOpenSwap, onOpenAnalytics, isSwapped, painLevel, onPainChange, painLocations, onPainLocationsChange,
 }) {
   const isDuration = exercise.tracks === 'duration'
   const isCompound = (programExercise?.rest_seconds ?? 0) >= 120
@@ -183,6 +183,9 @@ export default function ExercisePanel({
         </button>
         <button className="ex-action pressable" onClick={onOpenSwap}>
           <Icon name="swap" size={15} /> Swap
+        </button>
+        <button className="ex-action pressable" onClick={onOpenAnalytics}>
+          <Icon name="insights" size={15} /> Analytics
         </button>
         {programExercise?.is_strength_lift && !isDuration && warmups.length === 0 && (
           <button className="ex-action pressable" onClick={addWarmups}>

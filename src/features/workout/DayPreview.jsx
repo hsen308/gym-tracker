@@ -10,6 +10,7 @@ import Button from '../../components/Button'
 import Icon from '../../components/Icon'
 import Sheet from '../../components/Sheet'
 import StartSessionSheet from './StartSessionSheet'
+import ExerciseAnalyticsSheet from './ExerciseAnalyticsSheet'
 
 // Looking at a day is not the same as starting it. Opening a day used to
 // create a workout immediately, which meant you could not check what was on
@@ -29,6 +30,7 @@ export default function DayPreview() {
   const unfinished = useLiveQuery(() => db.workouts.filter((w) => !w.finished_at && !w.deleted_at).first(), [])
 
   const [cueExercise, setCueExercise] = useState(null)
+  const [analyticsExercise, setAnalyticsExercise] = useState(null)
   const [startOpen, setStartOpen] = useState(false)
   const [light, setLight] = useState(false)
 
@@ -137,22 +139,31 @@ export default function DayPreview() {
           const sets = sessionSets(pe)
           const isDuration = ex.tracks === 'duration'
           return (
-            <button key={pe.id} className="preview-row pressable" onClick={() => setCueExercise(ex)}>
-              <span className="preview-index">{String(i + 1).padStart(2, '0')}</span>
-              <span className="preview-main">
-                <span className="preview-name">
-                  {ex.name}
-                  {pe.is_strength_lift && <span className="tag tag-strength">MAIN LIFT</span>}
-                  {ex.si_risk === 'caution' && <span className="tag tag-caution">SI</span>}
+            <div key={pe.id} className="preview-row">
+              <button className="preview-main-btn pressable" onClick={() => setCueExercise(ex)}>
+                <span className="preview-index">{String(i + 1).padStart(2, '0')}</span>
+                <span className="preview-main">
+                  <span className="preview-name">
+                    {ex.name}
+                    {pe.is_strength_lift && <span className="tag tag-strength">MAIN LIFT</span>}
+                    {ex.si_risk === 'caution' && <span className="tag tag-caution">SI</span>}
+                  </span>
+                  <span className="preview-muscle">{ex.primary_muscle ? ex.primary_muscle.replace(/_/g, ' ') : ''}</span>
+                  <span className="preview-target">
+                    {sets} × {pe.rep_min}–{pe.rep_max}{isDuration ? 's' : ' reps'} · {pe.rest_seconds}s rest
+                    {pe.notes ? ` · ${pe.notes}` : ''}
+                  </span>
                 </span>
-                <span className="preview-muscle">{ex.primary_muscle ? ex.primary_muscle.replace(/_/g, ' ') : ''}</span>
-                <span className="preview-target">
-                  {sets} × {pe.rep_min}–{pe.rep_max}{isDuration ? 's' : ' reps'} · {pe.rest_seconds}s rest
-                  {pe.notes ? ` · ${pe.notes}` : ''}
-                </span>
-              </span>
+              </button>
+              <button
+                className="preview-action pressable"
+                aria-label={`${ex.name} analytics`}
+                onClick={() => setAnalyticsExercise(ex)}
+              >
+                <Icon name="insights" size={15} />
+              </button>
               <Icon name="chevron" size={16} className="faint" />
-            </button>
+            </div>
           )
         })}
       </div>
@@ -193,6 +204,12 @@ export default function DayPreview() {
       <Sheet open={!!cueExercise} onClose={() => setCueExercise(null)}>
         {cueExercise && <ExerciseCues exercise={cueExercise} />}
       </Sheet>
+
+      <ExerciseAnalyticsSheet
+        open={!!analyticsExercise}
+        onClose={() => setAnalyticsExercise(null)}
+        exercise={analyticsExercise}
+      />
     </div>
   )
 }

@@ -282,6 +282,21 @@
 .preview-row:active { background: var(--surface-alt); }
 .preview-index { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-faint); width: 20px; flex: none; padding-top: 3px; }
 .preview-main { flex: 1; min-width: 0; }
+/* The cue-opening region of a preview row. Rows carry a second, separate
+   analytics button, so the row became a div and this part its own button —
+   nesting buttons would be invalid HTML. */
+.preview-main-btn {
+  flex: 1; min-width: 0; display: flex; align-items: flex-start;
+  gap: var(--space-3); text-align: left; color: var(--text);
+}
+.preview-action {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex: none; align-self: flex-start;
+  color: var(--text-muted);
+  background: var(--surface-alt); border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.preview-action:active { background: var(--surface-high); color: var(--text); }
 .preview-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-weight: 500; }
 .preview-target { display: block; font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 

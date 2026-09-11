@@ -18,6 +18,7 @@ import SwapSheet from './SwapSheet'
 import CustomExerciseSheet from './CustomExerciseSheet'
 import SessionTimeSheet from './SessionTimeSheet'
 import CaffeinePrompt from './CaffeinePrompt'
+import ExerciseAnalyticsSheet from './ExerciseAnalyticsSheet'
 import { ExerciseCues } from './DayPreview'
 
 // The core screen (build-plan §7 Phase 1 item 5). Every write below goes
@@ -55,6 +56,7 @@ export default function ActiveWorkout() {
   const [expandedId, setExpandedId] = useState(null)
   const [cueSlotId, setCueSlotId] = useState(null)
   const [swapSlotId, setSwapSlotId] = useState(null)
+  const [analyticsExercise, setAnalyticsExercise] = useState(null)
   const [finishOpen, setFinishOpen] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
@@ -285,6 +287,7 @@ export default function ActiveWorkout() {
                 onToggleExpand={() => setExpandedId(pe.id)}
                 onOpenCues={() => setCueSlotId(pe.id)}
                 onOpenSwap={() => setSwapSlotId(pe.id)}
+                onOpenAnalytics={() => setAnalyticsExercise(exercise)}
                 onConfirmSet={(draft) => confirmSet(pe, exercise, draft)}
                 onUpdateSet={updateSet}
                 onRemoveSet={removeSet}
@@ -317,6 +320,16 @@ export default function ActiveWorkout() {
       <Sheet open={!!cueExercise} onClose={() => setCueSlotId(null)}>
         {cueExercise && <ExerciseCues exercise={cueExercise} />}
       </Sheet>
+
+      {/* Per-exercise analytics — trend, PRs, SI pain correlation. The live
+          session's in-progress sets are excluded so they can't pollute the
+          history. */}
+      <ExerciseAnalyticsSheet
+        open={!!analyticsExercise}
+        onClose={() => setAnalyticsExercise(null)}
+        exercise={analyticsExercise}
+        excludeWorkoutId={workoutId}
+      />
 
       <SwapSheet
         open={!!swapSlot}

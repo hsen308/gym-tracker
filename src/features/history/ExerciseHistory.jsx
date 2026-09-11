@@ -7,7 +7,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { format, parseISO } from 'date-fns'
 import { db } from '../../db/dexie'
 import { e1rm } from '../../lib/calc'
+import { siCorrelation } from '../../lib/insights'
 import { modeOf, labelForMode, supportsLoadModes } from '../../lib/loadMode'
+import { SICorrelationCard } from '../workout/ExerciseAnalyticsSheet'
 import Icon from '../../components/Icon'
 
 const E1rmChart = lazy(() => import('./E1rmChart'))
@@ -22,6 +24,10 @@ export default function ExerciseHistory() {
     [exerciseId],
   )
   const workouts = useLiveQuery(() => db.workouts.toArray(), [])
+  // The SI-pain correlation needs to know which workouts DIDN'T include this
+  // lift too, so it loads every set — the same raw material CoachReport uses.
+  const allSets = useLiveQuery(() => db.sets.filter((s) => !s.deleted_at).toArray(), [])
+  const exercises = useLiveQuery(() => db.exercises.filter((e) => !e.deleted_at).toArray(), [])
 
   // Which mode this lift is mostly done in. Everything else is excluded from
   // the trend — a 95 kg machine dip and a bodyweight dip are two exercises
@@ -65,7 +71,12 @@ export default function ExerciseHistory() {
     })
   }, [sets, workouts, dominantMode])
 
-  if (!exercise || !sets || !workouts) return null
+  if (!exercise || !sets || !workouts || !allSets || !exercises) return null
+
+  // Same SI-pain signal the coach report prints, narrowed to this lift and
+  // rendered through the shared card so both screens can never disagree.
+  const exerciseById = Object.fromEntries(exercises.map((e) => [e.id, e]))
+  const correlation = siCorrelation(workouts, allSets, exerciseById).find((r) => r.exerciseId === exerciseId) ?? null
 
   const best = sessionPoints.reduce((m, p) => Math.max(m, p.e1rm), 0)
 
@@ -109,6 +120,8 @@ export default function ExerciseHistory() {
           </Suspense>
         </div>
       )}
+
+      <SICorrelationCard correlation={correlation} style={{ marginBottom: 'var(--space-5)' }} />
 
       <h2 className="label section-label">By session</h2>
       <div className="rule-list">
