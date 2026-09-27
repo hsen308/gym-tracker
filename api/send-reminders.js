@@ -4,12 +4,11 @@
 // reaches a phone whose app is CLOSED, which a browser timer by definition
 // cannot do.
 //
-// Two slots each day — morning (~08:00 local) and evening (~17:00-ish local,
-// the creatine window). Each slot sends at most one message per user, and
-// _messages.js + last_sent_tag keep two promises: never more than two
-// notifications a day, and never the same KIND twice. So a morning routine
-// nudge leaves the evening free to ask about creatine, and a run that fires
-// twice still only produces one message.
+// Four slots each day — morning (05:00 UTC), midday (10:00 UTC),
+// evening (14:00 UTC), night (18:00 UTC). Each slot sends at most one
+// message per user, and _messages.js + last_sent_tag keep two promises:
+// never more than four of the same kind a day, and the tag guard prevents
+// redundant nudges of the same type across slots.
 //
 // What it does NOT do is the rest timer. Getting a push to land at exactly
 // T+180s needs a delayed-job service; a twice-a-day cron can't, and
@@ -40,11 +39,15 @@ export default async function handler(req, res) {
 
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 
-  // Which half of the day this run is. The morning cron fires before noon,
-  // the evening one after; the pools in _messages.js dial the offering to
-  // the half of the day it makes sense in (routine/water in the morning,
-  // creatine/meals in the evening).
-  const slot = new Date().getUTCHours() < 12 ? 'morning' : 'evening'
+  // Vercel Cron passes ?slot=morning|midday|evening|night via the vercel.json
+  // path (e.g. /api/send-reminders?slot=morning). Read it first; fall back to
+  // a coarse time-based guess only when the param is missing or invalid (e.g.
+  // manual curl tests without the param).
+  const VALID_SLOTS = ['morning', 'midday', 'evening', 'night']
+  const paramSlot = req.query?.slot
+  const hour = new Date().getUTCHours()
+  const fallbackSlot = hour < 8 ? 'morning' : hour < 12 ? 'midday' : hour < 16 ? 'evening' : 'night'
+  const slot = VALID_SLOTS.includes(paramSlot) ? paramSlot : fallbackSlot
 
   // The service role key bypasses RLS, which is required here: this runs as
   // nobody, on a schedule, and has to read across all users. It is a SERVER
@@ -55,11 +58,11 @@ export default async function handler(req, res) {
 
   const [subs, workouts, sets, bodyweight, measurements, dailyLogs, mealLogs, profiles] = await Promise.all([
     supabase.from('push_subscriptions').select('*').then((r) => r.data ?? []),
-    supabase.from('workouts').select('id, user_id, date, finished_at, skipped_at, si_pain_score, deleted_at').then((r) => r.data ?? []),
+    supabase.from('workouts').select('id, user_id, date, finished_at, skipped_at, si_pain_score, sternal_pain_score, deleted_at').then((r) => r.data ?? []),
     supabase.from('sets').select('user_id, workout_id, exercise_id, weight_kg, reps, rir, is_warmup, is_drop_set, load_mode, deleted_at').then((r) => r.data ?? []),
     supabase.from('bodyweight_logs').select('user_id, date, weight_kg, deleted_at').then((r) => r.data ?? []),
     supabase.from('measurements').select('user_id, date, waist_cm, deleted_at').then((r) => r.data ?? []),
-    supabase.from('daily_logs').select('user_id, date, water_litres, creatine_taken, deleted_at').then((r) => r.data ?? []),
+    supabase.from('daily_logs').select('user_id, date, water_litres, creatine_taken, morning_sternal_pain, morning_si_pain, morning_back_pain, morning_stiffness_minutes, deleted_at').then((r) => r.data ?? []),
     supabase.from('meal_logs').select('user_id, date, deleted_at').then((r) => r.data ?? []),
     supabase.from('profiles').select('*').then((r) => r.data ?? []),
   ])
@@ -103,8 +106,10 @@ export default async function handler(req, res) {
   let pruned = 0
 
   for (const sub of subs) {
-    if (!cache.has(sub.user_id)) cache.set(sub.user_id, messageFor(sub.user_id, alreadySentTagFor(sub)))
-    const message = cache.get(sub.user_id)
+    const previousTag = alreadySentTagFor(sub)
+    const cacheKey = `${sub.user_id}:${previousTag ?? ''}`
+    if (!cache.has(cacheKey)) cache.set(cacheKey, messageFor(sub.user_id, previousTag))
+    const message = cache.get(cacheKey)
     if (!message) continue
 
     try {

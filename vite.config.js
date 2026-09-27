@@ -28,20 +28,33 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,ico}'],
-        // Without these, a deploy doesn't show up until the app has been
-        // fully closed and reopened — the old worker keeps serving the old
-        // cached bundle, so a fresh deploy looks like nothing happened.
-        // skipWaiting activates the new worker immediately; clientsClaim
-        // hands it the already-open page.
+        // Exclude heavy lazy-loaded chunks from the initial offline precache.
+        // Barcode scanner (ZXing ~450kB) and Recharts (~350kB) should only load
+        // when their respective screens are opened.
+        globIgnores: ['**/vendor-scanner*.js', '**/vendor-charts*.js', '**/BarcodeScanner*.js', '**/LineChart*.js'],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        // Adds our push + notificationclick handlers to the generated
-        // worker. Cheaper than switching to injectManifest, which would
-        // hand us the whole service worker to maintain including the
-        // precache logic that already works.
         importScripts: ['/push-sw.js'],
       }
     })
-  ]
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@supabase')) return 'vendor-supabase'
+            if (id.includes('dexie')) return 'vendor-dexie'
+            if (id.includes('motion')) return 'vendor-motion'
+            if (id.includes('date-fns')) return 'vendor-date-fns'
+            if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts'
+            if (id.includes('@zxing')) return 'vendor-scanner'
+            return 'vendor-core'
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600,
+  }
 })

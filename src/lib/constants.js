@@ -47,18 +47,31 @@ export const DAILY_TARGETS = { steps: 9000, water_litres: 3.2, sleep_hours: 8 }
 // one list: the useful signal is often that a JOINT is sore while the muscle
 // around it isn't, which is the distinction between training and damage.
 export const SORE_AREAS = [
+  { key: 'sternum', label: 'Sternum / SC joint' },
+  { key: 'si_joint', label: 'SI joint' },
+  { key: 'interscapular', label: 'Upper / Interscapular back' },
+  { key: 'lower_back', label: 'Lower back' },
+  { key: 'hips', label: 'Hips' },
+  { key: 'chest', label: 'Chest (muscles)' },
+  { key: 'shoulders', label: 'Shoulders' },
+  { key: 'back', label: 'Lats / Mid back' },
   { key: 'quads', label: 'Quads' },
   { key: 'hamstrings', label: 'Hamstrings' },
   { key: 'glutes', label: 'Glutes' },
   { key: 'calves', label: 'Calves' },
-  { key: 'chest', label: 'Chest' },
-  { key: 'back', label: 'Back' },
-  { key: 'shoulders', label: 'Shoulders' },
   { key: 'arms', label: 'Arms' },
-  { key: 'si_joint', label: 'SI joint' },
-  { key: 'lower_back', label: 'Lower back' },
   { key: 'knees', label: 'Knees' },
   { key: 'elbows', label: 'Elbows' },
+]
+
+// Morning stiffness duration — key clinical metric for axial SpA / SAPHO inflammatory activity.
+// >30 min is standard threshold for inflammatory disease flare.
+export const STIFFNESS_OPTIONS = [
+  { value: 0, label: 'None (<5m)' },
+  { value: 15, label: '5–15m' },
+  { value: 30, label: '15–30m' },
+  { value: 45, label: '30–60m' },
+  { value: 60, label: '>60m' },
 ]
 
 // Program's weekly volume guidance, and the evidence-supported band it cites.

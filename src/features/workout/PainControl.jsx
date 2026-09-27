@@ -17,21 +17,24 @@ const LEVELS = [
 ]
 
 const PAIN_LOCATIONS = [
-  { key: 'left_si', label: 'Left SI' },
-  { key: 'right_si', label: 'Right SI' },
-  { key: 'bilateral_si', label: 'Bilateral SI' },
+  { key: 'sternum', label: 'Sternum (Center)' },
+  { key: 'sc_joints', label: 'SC Joint / Clavicle' },
+  { key: 'ribs', label: 'Rib cartilage' },
+  { key: 'interscapular', label: 'Upper / Interscapular back' },
+  { key: 'si_joint', label: 'SI Joint' },
   { key: 'lower_back', label: 'Lower back' },
-  { key: 'left_hip', label: 'Left hip' },
-  { key: 'right_hip', label: 'Right hip' },
-  { key: 'groin', label: 'Groin' },
-  { key: 'hamstring', label: 'Hamstring' },
+  { key: 'hips', label: 'Hips' },
+  { key: 'shoulders', label: 'Shoulders' },
 ]
 
 export { PAIN_LOCATIONS }
 
-export default function PainControl({ value, onChange, painLocations = [], onLocationsChange }) {
+export default function PainControl({ value, onChange, painLocations = [], onLocationsChange, exercise }) {
   const active = LEVELS.find((l) => l.key === value)
   const showLocations = value === 'yellow' || value === 'red'
+
+  const isChest = exercise?.primary_muscle === 'chest' || exercise?.category === 'push' || exercise?.sternal_risk === 'caution'
+  const jointLabel = isChest ? 'Chest / SC Joint' : 'SI Joint / Pelvis'
 
   const toggleLocation = (key) => {
     if (!onLocationsChange) return
@@ -44,7 +47,7 @@ export default function PainControl({ value, onChange, painLocations = [], onLoc
   return (
     <div className="pain-control">
       <div className="pain-row">
-        <span className="label">SI joint</span>
+        <span className="label">{jointLabel}</span>
         <div className="pain-buttons">
           {LEVELS.map((l) => (
             <button

@@ -326,6 +326,12 @@ alter table push_subscriptions add column if not exists last_sent_tag text;
 -- caffeine 10%), computed at finish by FinishSheet.jsx.
 alter table workouts add column if not exists quality_score numeric(3,1);
 
+-- Daily inflammatory check-in and chest-wall pain recorded at session finish.
+alter table workouts add column if not exists sternal_pain_score int check (sternal_pain_score between 0 and 10);
+alter table daily_logs add column if not exists morning_sternal_pain int check (morning_sternal_pain between 0 and 10);
+alter table daily_logs add column if not exists morning_back_pain int check (morning_back_pain between 0 and 10);
+alter table daily_logs add column if not exists morning_stiffness_minutes int check (morning_stiffness_minutes >= 0);
+
 -- ------------------------------------------------------------
 -- 8. Tell PostgREST to re-read the schema
 -- ------------------------------------------------------------

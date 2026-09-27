@@ -5,3 +5,5 @@ dist
 *.local
 
 .vercel
+
+.claude/settings.local.json

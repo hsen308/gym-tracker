@@ -8,6 +8,7 @@ import Button from '../../components/Button'
 import { useProfile } from '../../app/ProfileProvider'
 import { todayLocalDate } from '../../lib/format'
 import { localDateOf } from '../../lib/time'
+import { estimateDayMacrosWithAi } from '../../lib/ai'
 
 // An eating "day" doesn't end at midnight. Logging at 1am is almost always
 // logging the day that just finished, so before 4am the sheet defaults to
@@ -77,12 +78,43 @@ export default function DayEstimateSheet({ open, onClose, onSave, onDelete }) {
       : { ...MACRO_TARGET, notes: '' })
   }, [open, date, existing?.id, existing === undefined])
 
+  const [loadingAi, setLoadingAi] = useState(false)
+  const [aiError, setAiError] = useState('')
+  const [glucoseAlert, setGlucoseAlert] = useState(null)
+
+  const runAiEstimate = async () => {
+    if (!v.notes?.trim() || loadingAi) return
+    setLoadingAi(true)
+    setAiError('')
+    setGlucoseAlert(null)
+
+    try {
+      const res = await estimateDayMacrosWithAi(v.notes)
+      setV((prev) => ({
+        ...prev,
+        calories: res.calories ?? prev.calories,
+        protein_g: res.protein_g ?? prev.protein_g,
+        carbs_g: res.carbs_g ?? prev.carbs_g,
+        fat_g: res.fat_g ?? prev.fat_g,
+      }))
+      if (res.glucose_warning) {
+        setGlucoseAlert({
+          isHigh: res.is_high_glucose,
+          message: res.glucose_warning,
+        })
+      }
+    } catch (err) {
+      setAiError(err.message || 'Could not estimate macros with AI.')
+    } finally {
+      setLoadingAi(false)
+    }
+  }
+
   return (
     <Sheet open={open} onClose={onClose}>
       <h2 className="sheet-title">{existing ? 'Edit estimate' : 'Estimate a whole day'}</h2>
       <p className="sheet-sub">
-        Roughly what you ate. Starts at your targets — nudge from there. An honest
-        estimate beats an empty day.
+        Type what you ate and tap AI Estimate, or adjust steppers manually.
       </p>
 
       <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Which day</p>
@@ -96,6 +128,55 @@ export default function DayEstimateSheet({ open, onClose, onSave, onDelete }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        <label className="field">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <span className="label">What you ate</span>
+            <button
+              type="button"
+              className="btn btn-ghost pressable"
+              style={{ fontSize: 13, color: 'var(--signal)', padding: '2px 8px', fontWeight: 600 }}
+              disabled={!v.notes?.trim() || loadingAi}
+              onClick={runAiEstimate}
+            >
+              {loadingAi ? 'AI Estimating...' : '✨ AI Estimate'}
+            </button>
+          </div>
+          <textarea
+            rows={3}
+            value={v.notes}
+            onChange={(e) => setV({ ...v, notes: e.target.value })}
+            placeholder="e.g. 3 eggs with labneh, lunch grilled chicken and white rice, 1 banana, dinner tuna with pita"
+          />
+          <span className="field-hint">
+            Type foods in normal words. Tap ✨ AI Estimate to calculate macros & scan for skin/cyst triggers.
+          </span>
+        </label>
+
+        {aiError && (
+          <p className="field-hint" style={{ color: 'var(--danger)', fontSize: 13 }}>
+            {aiError}
+          </p>
+        )}
+
+        {glucoseAlert && (
+          <div
+            className="panel"
+            style={{
+              padding: 'var(--space-3) var(--space-4)',
+              borderRadius: 'var(--radius)',
+              background: glucoseAlert.isHigh ? 'var(--danger-soft)' : 'var(--pr-soft)',
+              border: `1px solid ${glucoseAlert.isHigh ? 'var(--danger)' : 'var(--pr)'}`,
+            }}
+          >
+            <p className="label" style={{ color: glucoseAlert.isHigh ? 'var(--danger)' : 'var(--pr)', marginBottom: 2 }}>
+              {glucoseAlert.isHigh ? '⚠️ Follicular Occlusion Warning' : '🟢 Clean Glucose Day'}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.4, color: 'var(--text)' }}>
+              {glucoseAlert.message}
+            </p>
+          </div>
+        )}
+
         <StepperRow
           label="Calories" hint={`target ${MACRO_TARGET.calories}`}
           value={v.calories} step={50} longPressStep={200} min={0} max={8000}
@@ -120,19 +201,6 @@ export default function DayEstimateSheet({ open, onClose, onSave, onDelete }) {
           format={(n) => `${n} g`}
           onChange={(fat_g) => setV({ ...v, fat_g })}
         />
-
-        <label className="field">
-          <span className="label">What you ate</span>
-          <textarea
-            rows={4}
-            value={v.notes}
-            onChange={(e) => setV({ ...v, notes: e.target.value })}
-            placeholder="Eggs and labneh, chicken and rice, shawarma at night, 2 coffees"
-          />
-          <span className="field-hint">
-            The main things, not every ingredient. This is what makes the number readable in a month.
-          </span>
-        </label>
 
         <Button className="btn-block" onClick={() => onSave({ ...v, date })}>
           {existing ? 'Save estimate' : `Log ${date === todayLocalDate() ? 'today' : format(parseISO(date), 'EEE d MMM')}`}

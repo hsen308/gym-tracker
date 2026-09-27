@@ -8,6 +8,7 @@ import { toLocalInputValue, fromLocalInputValue } from '../../lib/time'
 // calorie-adjust logic run on — the whole reason the finish step exists.
 export default function FinishSheet({ open, onClose, onFinish, startedAt, workout, targetSets, doneSets }) {
   const [siPain, setSiPain] = useState(0)
+  const [sternalPain, setSternalPain] = useState(0)
   const [energy, setEnergy] = useState(3)
   // The program calls sleep "genuinely as important as the diet", and the
   // schema has had a column for it since day one — it was just never asked for.
@@ -23,16 +24,14 @@ export default function FinishSheet({ open, onClose, onFinish, startedAt, workou
     if (open) { setFinishedAt(toLocalInputValue(new Date())); setEditTime(false) }
   }, [open])
 
-  // The 0–10 quality score. Weights per spec: energy 40%, % target sets
-  // 30%, SI pain inverse 20%, caffeine 10%. Caffeine is asked once at the
-  // start (stored on the workout); a session that never got the question
-  // has no caffeine data, so instead of inventing a 0.5 the known
-  // components are renormalised to 100%.
+  // The 0–10 quality score. Weights: energy 40%, % target sets 30%,
+  // peak joint pain inverse 20%, caffeine 10%.
   const setRatio = targetSets > 0 ? Math.min(1, (doneSets ?? 0) / targetSets) : 0
   const qualityScore = () => {
     const energyPts = (energy - 1) / 4
     const setsPts = setRatio
-    const painPts = (10 - siPain) / 10
+    const peakPain = Math.max(siPain, sternalPain)
+    const painPts = (10 - peakPain) / 10
     if (workout?.caffeine == null) {
       const raw = (0.4 * energyPts + 0.3 * setsPts + 0.2 * painPts) / 0.9
       return Math.round(raw * 10) / 10
@@ -48,6 +47,7 @@ export default function FinishSheet({ open, onClose, onFinish, startedAt, workou
     setSaving(true)
     onFinish({
       si_pain_score: siPain,
+      sternal_pain_score: sternalPain,
       energy,
       sleep_hours: sleep,
       notes: notes.trim() || null,
@@ -69,7 +69,12 @@ export default function FinishSheet({ open, onClose, onFinish, startedAt, workou
 
       <div className="stack-5" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         <StepperRow
-          label="SI joint pain" hint="0 = none, 10 = worst"
+          label="Sternum & Clavicles" hint="0 = none, 10 = severe"
+          value={sternalPain} onChange={setSternalPain} step={1} min={0} max={10}
+          format={(v) => (v === 0 ? 'none' : String(v))}
+        />
+        <StepperRow
+          label="SI joint & Lower back" hint="0 = none, 10 = severe"
           value={siPain} onChange={setSiPain} step={1} min={0} max={10}
           format={(v) => (v === 0 ? 'none' : String(v))}
         />

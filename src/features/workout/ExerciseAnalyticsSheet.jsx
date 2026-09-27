@@ -24,18 +24,19 @@ export default function ExerciseAnalyticsSheet({ open, onClose, exercise, exclud
   const navigate = useNavigate()
 
   // This exercise's own sets: what the trend and the best are drawn from.
-  // `excludeWorkoutId` drops the session you're mid-way through — its sets
-  // aren't history yet, and a half-logged bench can't be a data point.
+  // Gated on `open`: these scan history across workouts, sets, and exercises.
+  // When the sheet is closed (which is 99% of a workout), none of these queries
+  // should execute on Dexie writes.
   const exerciseSets = useLiveQuery(
-    () => (exercise
+    () => (open && exercise
       ? db.sets.where('exercise_id').equals(exercise.id)
           .filter((s) => !s.deleted_at && !s.is_warmup && s.workout_id !== excludeWorkoutId).toArray()
       : Promise.resolve([])),
-    [exercise?.id, excludeWorkoutId],
+    [open, exercise?.id, excludeWorkoutId],
   )
-  const workouts = useLiveQuery(() => db.workouts.toArray(), [])
-  const allSets = useLiveQuery(() => db.sets.filter((s) => !s.deleted_at).toArray(), [])
-  const exercises = useLiveQuery(() => db.exercises.filter((e) => !e.deleted_at).toArray(), [])
+  const workouts = useLiveQuery(() => (open ? db.workouts.toArray() : Promise.resolve([])), [open])
+  const allSets = useLiveQuery(() => (open ? db.sets.filter((s) => !s.deleted_at).toArray() : Promise.resolve([])), [open])
+  const exercises = useLiveQuery(() => (open ? db.exercises.filter((e) => !e.deleted_at).toArray() : Promise.resolve([])), [open])
 
   // Which mode this lift is mostly done in — machine dips and bodyweight dips
   // share a name but not a curve, and one line through both is a cliff.
@@ -89,10 +90,8 @@ export default function ExerciseAnalyticsSheet({ open, onClose, exercise, exclud
     return siCorrelation(workouts, allSets, exerciseById).find((r) => r.exerciseId === exercise.id) ?? null
   }, [open, exercise?.id, exercises, workouts, allSets])
 
-  // Bail out until every piece of state has resolved once — on first open the
-  // live queries are running, and rendering a chart over missing data either
-  // flashes an empty state or crashes.
-  if (!exercise || !exerciseSets || !workouts || !allSets || !exercises) return null
+  // Bail out if closed or until every piece of state has resolved once
+  if (!open || !exercise || !exerciseSets || !workouts || !allSets || !exercises) return null
 
   const best = sessionPoints.reduce((m, p) => Math.max(m, p.e1rm), 0)
   const prCount = sessionPoints.filter((p) => p.isPR).length

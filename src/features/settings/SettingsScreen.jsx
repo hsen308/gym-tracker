@@ -250,6 +250,13 @@ export default function SettingsScreen() {
         </section>
 
         <section className="panel set-block">
+          <p className="label" style={{ marginBottom: 'var(--space-3)' }}>AI coach</p>
+          <p className="muted" style={{ fontSize: 13, lineHeight: 1.55 }}>
+            Estimate a full day of food from plain language, then use joint-conscious exercise suggestions when a lift does not feel right. Macro totals are estimates and exercise suggestions are not medical clearance.
+          </p>
+        </section>
+
+        <section className="panel set-block">
           <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Sessions a week</p>
           <p className="muted" style={{ fontSize: 13, marginBottom: 'var(--space-4)', lineHeight: 1.55 }}>
             What you can realistically train, which isn't always what the programme contains.

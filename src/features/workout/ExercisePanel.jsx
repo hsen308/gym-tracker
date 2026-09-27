@@ -98,6 +98,11 @@ export default function ExercisePanel({
         {isSwapped && <span className="tag tag-swap">SWAP</span>}
         {programExercise?.is_strength_lift && <span className="tag tag-strength">MAIN LIFT</span>}
         {exercise.si_risk === 'caution' && <span className="tag tag-caution">SI</span>}
+        {(exercise.sternal_risk === 'caution' || exercise.name === 'Dips') && (
+          <span className="tag tag-caution" style={{ color: 'var(--danger)', background: 'var(--danger-soft)', borderColor: 'var(--danger)' }}>
+            SC / STERNUM
+          </span>
+        )}
       </span>
       <span className={`ex-row-count ${complete ? 'is-done' : ''}`}>
         {complete && <Icon name="check" size={13} strokeWidth={2.5} />}
@@ -237,14 +242,14 @@ export default function ExercisePanel({
         </div>
       )}
 
-      {/* Only on the lifts the program flags — asking after every cable curl
-          would train you to ignore it (apple-design §13: over-feedback). */}
-      {exercise.si_risk === 'caution' && (
+      {/* On lifts that stress the SI joint or the sternum/SC joints (chest/pressing) */}
+      {(exercise.si_risk === 'caution' || exercise.sternal_risk === 'caution' || exercise.name === 'Dips' || exercise.primary_muscle === 'chest') && (
         <PainControl
           value={painLevel}
           onChange={onPainChange}
           painLocations={painLocations}
           onLocationsChange={onPainLocationsChange}
+          exercise={exercise}
         />
       )}
 

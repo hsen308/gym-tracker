@@ -60,6 +60,7 @@ export default function ActiveWorkout() {
   const [finishOpen, setFinishOpen] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
+  const [customDraft, setCustomDraft] = useState(null)
 
   // Reopening a finished session turns this screen into an editor: same
   // logging UI, but no wake lock, no rest timers, and the footer saves rather
@@ -341,12 +342,13 @@ export default function ActiveWorkout() {
         onSwap={(alt) => { patchSlot(swapSlot.id, { swapped_exercise_id: alt.id }); setSwapSlotId(null) }}
         onPersist={(exerciseId) => updateRow('program_exercises', swapSlot.id, { swap_to_exercise_id: exerciseId, updated_at: new Date().toISOString() })}
         onClearDefault={() => updateRow('program_exercises', swapSlot.id, { swap_to_exercise_id: null, updated_at: new Date().toISOString() })}
-        onAddCustom={() => setCustomOpen(true)}
+        onAddCustom={(draft) => { setCustomDraft(draft ?? null); setCustomOpen(true) }}
       />
 
       <CustomExerciseSheet
         open={customOpen}
-        onClose={() => { setCustomOpen(false); setSwapSlotId(null) }}
+        onClose={() => { setCustomOpen(false); setCustomDraft(null); setSwapSlotId(null) }}
+        initialDraft={customDraft}
         user={workout ? { id: workout.user_id } : null}
         onCreated={(ex) => {
           if (swapSlot) { patchSlot(swapSlot.id, { swapped_exercise_id: ex.id }) }

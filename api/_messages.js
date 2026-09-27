@@ -13,27 +13,26 @@
 import { adherenceHabit } from './_adherence.js'
 
 const SLOT_MORNING = 'morning'
+const SLOT_MIDDAY = 'midday'
 const SLOT_EVENING = 'evening'
+const SLOT_NIGHT = 'night'
 
-// What each slot may send. Health items are shared (a si-joint warning or a
-// due dose can land in either half of the day); the daily-tick chores
-// (creatine, meals, water, routine) and the milestones are slotted to the
-// time of day they make sense.
+// What each slot may send across the 4 daily windows.
 const POOLS = {
-  [SLOT_MORNING]: ['si-warning', 'medication', 'routine', 'water', 'habit'],
+  [SLOT_MORNING]: ['morning-check', 'sternal-warning', 'si-warning', 'medication', 'routine'],
+  [SLOT_MIDDAY]: ['medication', 'water', 'habit', 'routine'],
   [SLOT_EVENING]: [
-    'si-warning', 'medication',
-    'nudge',                       // the absence messages outrank everything below
-    'milestone-week', 'week-check', 'milestone-waist', 'milestone-strength',
+    'sternal-warning', 'si-warning', 'medication',
+    'nudge',
     'creatine', 'meals',
+    'milestone-week', 'week-check', 'milestone-waist', 'milestone-strength',
     'steps', 'habit',
   ],
+  [SLOT_NIGHT]: ['meals-ai', 'meals', 'habit', 'steps'],
 }
 
 export function pickMessage(messages, slot, alreadySentTag) {
   const pool = POOLS[slot] ?? POOLS[SLOT_EVENING]
-  // Same tag already fired today, from the opposite slot → skip it. The cap
-  // is "two a day", not "two briefings a day".
   return (messages ?? []).find((m) => pool.includes(m.tag) && m.tag !== alreadySentTag) ?? null
 }
 
@@ -65,14 +64,35 @@ export function buildMessages({ profile, workouts, sets, bodyweight, measurement
 
   const out = []
 
-  // ---- 1. Joint warning. Outranks everything: this is the one that ends
-  // blocks, and it's the reason the programme exists in its current shape.
+  // ---- 1a. Sternal / SC joint osteitis warning
+  const recentSternal = done.slice(0, 3).filter((w) => w.sternal_pain_score != null)
+  const highestSternalPain = Math.max(0, ...recentSternal.map((w) => w.sternal_pain_score))
+  if (highestSternalPain >= 4) {
+    out.push({
+      title: 'Sternal / SC joint caution',
+      body: `Chest wall pain reached ${highestSternalPain}/10 recently. Avoid dips and heavy horizontal pressing today.`,
+      tag: 'sternal-warning',
+    })
+  }
+
+  // ---- 1b. SI joint warning
   const recent = done.slice(0, 3).filter((w) => w.si_pain_score != null)
   if (recent.length >= 2 && recent.every((w) => w.si_pain_score >= 4)) {
     out.push({
       title: 'SI pain is climbing',
       body: `${recent.length} sessions in a row at ${Math.min(...recent.map((w) => w.si_pain_score))}+. Drop the load 20% on whatever caused it before the next leg day.`,
       tag: 'si-warning',
+    })
+  }
+
+  // ---- 1c. Daily Morning Check-in reminder
+  const hasMorningCheck = ['morning_sternal_pain', 'morning_si_pain', 'morning_back_pain', 'morning_stiffness_minutes']
+    .some((key) => todayLog?.[key] != null)
+  if (!hasMorningCheck) {
+    out.push({
+      title: 'Morning check-in',
+      body: 'How are your sternum, SI joint, and morning stiffness feeling today? Tap to record in 5s.',
+      tag: 'morning-check',
     })
   }
 

@@ -5,34 +5,21 @@ import { useAuth } from '../../app/AuthProvider'
 import { useProfile } from '../../app/ProfileProvider'
 import { todayLocalDate } from '../../lib/format'
 import { localDateOf } from '../../lib/time'
-import { SORE_AREAS } from '../../lib/constants'
+import { SORE_AREAS, STIFFNESS_OPTIONS } from '../../lib/constants'
 import StepperRow from '../../components/StepperRow'
 import Sheet from '../../components/Sheet'
 import Button from '../../components/Button'
 import Icon from '../../components/Icon'
 
-// How you feel the morning AFTER training.
-//
-// Two things this catches that end-of-session pain can't:
-//
-//   1. The programme's RED flag is "pain lingering into the next day" —
-//      previously unobservable, because pain was only ever recorded when the
-//      session ended.
-//   2. Ordinary muscle soreness and an irritated joint feel similar at the
-//      time and completely different the next morning. Separating them is
-//      the difference between "trained hard" and "did damage".
-//
-// Only shown the day after a session — asking every day gets it ignored.
+// Daily morning check: joint pain across the 3 key inflammatory zones
+// (sternum/chest, SI joint, upper/mid back) + morning stiffness duration.
+// Available every morning (workout or rest day) to track disease activity.
 export default function MorningCheck() {
   const { user } = useAuth()
   const { profile } = useProfile()
   const today = todayLocalDate()
 
   const log = useLiveQuery(
-    // `.first()` resolves to undefined when nothing matches — the SAME value
-    // useLiveQuery returns while the read is in flight. Coerced to null so
-    // "loading" and "no entry today" are distinguishable; without it the
-    // guard below is permanently true and this never renders at all.
     async () => (await db.daily_logs.where('date').equals(today).first()) ?? null,
     [today],
   )
@@ -47,23 +34,31 @@ export default function MorningCheck() {
   }, [today])
 
   const [open, setOpen] = useState(false)
-  const [v, setV] = useState({ morning_si_pain: 0, morning_soreness: 2, sore_areas: [], morning_note: '' })
+  const [v, setV] = useState({
+    morning_sternal_pain: 0,
+    morning_si_pain: 0,
+    morning_back_pain: 0,
+    morning_stiffness_minutes: 0,
+    morning_soreness: 1,
+    sore_areas: [],
+    morning_note: '',
+  })
 
   useEffect(() => {
     if (!open) return
     setV({
+      morning_sternal_pain: log?.morning_sternal_pain ?? 0,
       morning_si_pain: log?.morning_si_pain ?? 0,
-      morning_soreness: log?.morning_soreness ?? 2,
+      morning_back_pain: log?.morning_back_pain ?? 0,
+      morning_stiffness_minutes: log?.morning_stiffness_minutes ?? 0,
+      morning_soreness: log?.morning_soreness ?? 1,
       sore_areas: log?.sore_areas ?? [],
       morning_note: log?.morning_note ?? '',
     })
   }, [open, log?.id])
 
   if (log === undefined || trainedYesterday === undefined) return null
-  const answered = log?.morning_si_pain != null || log?.morning_soreness != null
-  // Nothing to ask about on a day after a rest day, unless you already
-  // answered and might want to correct it.
-  if (!trainedYesterday && !answered) return null
+  const answered = log?.morning_si_pain != null || log?.morning_sternal_pain != null || log?.morning_stiffness_minutes != null
 
   const toggleArea = (key) =>
     setV((p) => ({
@@ -81,7 +76,10 @@ export default function MorningCheck() {
       steps: log?.steps ?? null,
       cardio_minutes: log?.cardio_minutes ?? null,
       water_litres: log?.water_litres ?? null,
+      morning_sternal_pain: v.morning_sternal_pain,
       morning_si_pain: v.morning_si_pain,
+      morning_back_pain: v.morning_back_pain,
+      morning_stiffness_minutes: v.morning_stiffness_minutes,
       morning_soreness: v.morning_soreness,
       sore_areas: v.sore_areas,
       morning_note: v.morning_note.trim() || null,
@@ -92,15 +90,22 @@ export default function MorningCheck() {
     setOpen(false)
   }
 
-  // The programme's own threshold: pain still there the next morning is the
-  // trigger to drop that exercise for the week, not to push through it.
-  const red = (log?.morning_si_pain ?? 0) >= 4
+  // Active inflammatory flare signals: any joint >= 4, or stiffness >= 30m
+  const maxPain = Math.max(log?.morning_sternal_pain ?? 0, log?.morning_si_pain ?? 0, log?.morning_back_pain ?? 0)
+  const red = maxPain >= 4 || (log?.morning_stiffness_minutes ?? 0) >= 30
+
+  const summaryParts = []
+  if (log?.morning_sternal_pain > 0) summaryParts.push(`Sternum ${log.morning_sternal_pain}/10`)
+  if (log?.morning_si_pain > 0) summaryParts.push(`SI ${log.morning_si_pain}/10`)
+  if (log?.morning_back_pain > 0) summaryParts.push(`Back ${log.morning_back_pain}/10`)
+  if (log?.morning_stiffness_minutes > 0) summaryParts.push(`Stiffness ~${log.morning_stiffness_minutes}m`)
+  if (!summaryParts.length && answered) summaryParts.push('Joints calm · feeling good')
 
   return (
     <>
       <button className={`panel morning-card pressable ${red ? 'is-red' : ''}`} onClick={() => setOpen(true)}>
         <div className="row">
-          <span className="label label-strong">This morning</span>
+          <span className="label label-strong">Daily Morning Check</span>
           {answered
             ? <span className="mono faint" style={{ fontSize: 12 }}>Edit</span>
             : <Icon name="chevron" size={16} className="faint" />}
@@ -108,53 +113,81 @@ export default function MorningCheck() {
         {answered ? (
           <>
             <p className="morning-summary">
-              SI {log.morning_si_pain}/10 · soreness {log.morning_soreness}/5
+              {summaryParts.join(' · ')}
               {log.sore_areas?.length ? ` · ${log.sore_areas.map(labelFor).join(', ')}` : ''}
             </p>
             {log.morning_note && <p className="morning-note">{log.morning_note}</p>}
             {red && (
               <p className="morning-red">
-                Pain into the next day is your programme's red flag — drop whatever caused it for the week
-                and substitute a machine that doesn't reproduce it.
+                Active flare detected. Avoid heavy sternal/clavicle compression and pelvic shearing today.
               </p>
             )}
           </>
         ) : (
           <p className="morning-summary">
-            You trained yesterday. How does it feel today? Next-day pain is the signal that matters most.
+            {trainedYesterday ? 'Trained yesterday. How do your sternum, back, and stiffness feel this morning?' : 'How do your sternum, back, and morning stiffness feel today?'}
           </p>
         )}
       </button>
 
       <Sheet open={open} onClose={() => setOpen(false)}>
-        <h2 className="sheet-title">This morning</h2>
+        <h2 className="sheet-title">Morning Check-in</h2>
         <p className="sheet-sub">
-          How you feel today, after yesterday's session. Muscle soreness and joint pain are
-          different things — the second one is the one that decides what changes this week.
+          Record pain and stiffness across the 3 key areas. Takes 10 seconds and tracks real inflammatory control.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-          {profile.has_si_joint && (
-            <StepperRow
-              label="SI joint, this morning" hint="0 = nothing, 4+ = change something"
-              value={v.morning_si_pain} onChange={(n) => setV({ ...v, morning_si_pain: n })}
-              step={1} min={0} max={10}
-              format={(n) => (n === 0 ? 'none' : String(n))}
-            />
-          )}
+          <StepperRow
+            label="Sternum & Clavicle (Chest wall)" hint="0 = none, 4+ = avoid dips/bench"
+            value={v.morning_sternal_pain} onChange={(n) => setV({ ...v, morning_sternal_pain: n })}
+            step={1} min={0} max={10}
+            format={(n) => (n === 0 ? 'none' : String(n))}
+          />
 
           <StepperRow
-            label="Muscle soreness" hint="0 = fresh, 5 = can barely move"
+            label="SI Joint (Pelvis / Lower back)" hint="0 = none, 4+ = reduce load"
+            value={v.morning_si_pain} onChange={(n) => setV({ ...v, morning_si_pain: n })}
+            step={1} min={0} max={10}
+            format={(n) => (n === 0 ? 'none' : String(n))}
+          />
+
+          <StepperRow
+            label="Upper / Interscapular back" hint="0 = none, 10 = severe"
+            value={v.morning_back_pain} onChange={(n) => setV({ ...v, morning_back_pain: n })}
+            step={1} min={0} max={10}
+            format={(n) => (n === 0 ? 'none' : String(n))}
+          />
+
+          <div>
+            <p className="label" style={{ marginBottom: 'var(--space-2)' }}>Morning stiffness duration</p>
+            <p className="field-hint" style={{ marginBottom: 'var(--space-2)' }}>Key marker of active spondyloarthritis inflammation</p>
+            <div className="area-grid">
+              {STIFFNESS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`area-chip ${v.morning_stiffness_minutes === opt.value ? 'is-active' : ''}`}
+                  onClick={() => setV({ ...v, morning_stiffness_minutes: opt.value })}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <StepperRow
+            label="Muscle soreness" hint="0 = fresh, 5 = sore everywhere"
             value={v.morning_soreness} onChange={(n) => setV({ ...v, morning_soreness: n })}
             step={1} min={0} max={5}
           />
 
           <div>
-            <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Where</p>
+            <p className="label" style={{ marginBottom: 'var(--space-3)' }}>Tender / sore areas</p>
             <div className="area-grid">
               {SORE_AREAS.map((a) => (
                 <button
                   key={a.key}
+                  type="button"
                   className={`area-chip ${v.sore_areas.includes(a.key) ? 'is-active' : ''}`}
                   onClick={() => toggleArea(a.key)}
                 >
@@ -165,19 +198,16 @@ export default function MorningCheck() {
           </div>
 
           <label className="field">
-            <span className="label">What do you think it's from?</span>
+            <span className="label">Notes / triggers</span>
             <textarea
-              rows={3}
+              rows={2}
               value={v.morning_note}
               onChange={(e) => setV({ ...v, morning_note: e.target.value })}
-              placeholder="Went too heavy on leg press, or hips tucked on the last set"
+              placeholder="e.g., Slept poorly, had sweets last night, or felt sharp on coughing"
             />
-            <span className="field-hint">
-              Your guess at the time is worth more than mine six weeks later.
-            </span>
           </label>
 
-          <Button className="btn-block" onClick={save}>Save</Button>
+          <Button className="btn-block" onClick={save}>Save Check-in</Button>
         </div>
       </Sheet>
     </>
