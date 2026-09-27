@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const {
   GEMINI_API_KEY,
-  GEMINI_MODEL = 'gemini-2.5-flash-lite',
+  GEMINI_MODEL = 'gemini-3.5-flash-lite',
   VITE_SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
 } = process.env
